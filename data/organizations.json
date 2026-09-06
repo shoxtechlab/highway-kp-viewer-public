@@ -1,0 +1,71 @@
+{
+  "operators": [
+    { "id": "e-nexco", "name": "NEXCO東日本", "description": "東日本高速道路株式会社の支社・管理事務所から選択します。" },
+    { "id": "c-nexco", "name": "NEXCO中日本", "description": "中日本高速道路株式会社の支社・保全・サービスセンターから選択します。" },
+    { "id": "w-nexco", "name": "NEXCO西日本", "description": "西日本高速道路株式会社の支社・高速道路事務所から選択します。" },
+    { "id": "honshi", "name": "本州四国連絡高速道路", "description": "E28・E30・E76の全線または管理センター管内から選択します。", "featuredRoutesSource": "data/honshi-routes.json", "featuredOfficesSource": "data/honshi-offices.json", "manifest": "manifest.webmanifest", "appleWebAppTitle": "KP Viewer 本四版" }
+  ],
+  "branches": [
+    { "id": "hokkaido", "operatorId": "e-nexco", "name": "北海道支社" },
+    { "id": "tohoku", "operatorId": "e-nexco", "name": "東北支社" },
+    { "id": "kanto", "operatorId": "e-nexco", "name": "関東支社" },
+    { "id": "niigata", "operatorId": "e-nexco", "name": "新潟支社" },
+    { "id": "tokyo", "operatorId": "c-nexco", "name": "東京支社" },
+    { "id": "nagoya", "operatorId": "c-nexco", "name": "名古屋支社" },
+    { "id": "kanazawa", "operatorId": "c-nexco", "name": "金沢支社" },
+    { "id": "kansai", "operatorId": "w-nexco", "name": "関西支社" },
+    { "id": "chugoku", "operatorId": "w-nexco", "name": "中国支社" },
+    { "id": "shikoku", "operatorId": "w-nexco", "name": "四国支社" },
+    { "id": "kyushu", "operatorId": "w-nexco", "name": "九州支社" }
+  ],
+  "offices": [
+    { "id": "nagano-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "長野管理事務所", "routesSource": "data/nagano-office-routes.json" },
+    { "id": "takasaki-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "高崎管理事務所", "routesSource": "data/takasaki-office-routes.json" },
+    { "id": "utsunomiya-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "宇都宮管理事務所", "routesSource": "data/utsunomiya-office-routes.json" },
+    { "id": "mito-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "水戸管理事務所", "routesSource": "data/mito-office-routes.json" },
+    { "id": "misato-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "三郷管理事務所", "routesSource": "data/misato-office-routes.json" },
+    { "id": "tokorozawa-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "所沢管理事務所", "routesSource": "data/tokorozawa-office-routes.json" },
+    { "id": "kazo-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "加須管理事務所", "routesSource": "data/kazo-office-routes.json" }
+    ,{ "id": "fukushima-office", "operatorId": "e-nexco", "branchId": "tohoku", "name": "福島管理事務所", "routes": [
+      { "id": "e4", "name": "E4 本宮IC〜白石IC", "scope": "fukushima-office", "portal": "fukushima-office" }
+    ] }
+    ,{ "id": "yawara-office", "operatorId": "e-nexco", "branchId": "kanto", "name": "谷和原管理事務所", "routes": [
+      { "id": "e6", "name": "E6 三郷IC〜岩間IC", "scope": "yawara-office", "portal": "yawara-office" },
+      { "id": "c4", "name": "C4 常総IC〜神崎IC", "scope": "yawara-office", "portal": "yawara-office" }
+    ] }
+    ,{ "id": "yuzawa-office", "operatorId": "e-nexco", "branchId": "niigata", "name": "湯沢管理事務所", "routes": [
+      { "id": "e17", "name": "E17 月夜野IC〜小千谷IC", "scope": "yuzawa-office", "portal": "yuzawa-office" }
+    ] }
+    ,{ "id": "yokohama-office", "operatorId": "c-nexco", "branchId": "tokyo", "name": "横浜保全・サービスセンター", "routes": [
+      { "id": "e1", "name": "E1 東京IC〜厚木IC", "scope": "yokohama-office", "portal": "yokohama-office" },
+      { "id": "e1a", "name": "E1A 海老名南JCT〜厚木南IC", "scope": "yokohama-office", "portal": "yokohama-office" },
+      { "id": "c4", "name": "C4 藤沢IC〜相模原IC", "scope": "yokohama-office", "portal": "yokohama-office" }
+    ] }
+    ,{ "id": "gotemba-office", "operatorId": "c-nexco", "branchId": "tokyo", "name": "御殿場保全・サービスセンター", "routes": [
+      { "id": "e1", "name": "E1 大井松田IC〜沼津IC", "scope": "gotemba-office", "portal": "gotemba-office" },
+      { "id": "e1a", "name": "E1A 新御殿場IC〜長泉沼津IC", "scope": "gotemba-office", "portal": "gotemba-office" }
+    ] }
+    ,{ "id": "shizuoka-office", "operatorId": "c-nexco", "branchId": "tokyo", "name": "静岡保全・サービスセンター", "routes": [
+      { "id": "e1", "name": "E1 清水IC〜浜松IC", "scope": "shizuoka-office", "portal": "shizuoka-office" }
+    ] }
+    ,{ "id": "hamamatsu-office", "operatorId": "c-nexco", "branchId": "tokyo", "name": "浜松保全・サービスセンター", "routes": [
+      { "id": "e1", "name": "E1 浜松IC〜豊川IC", "scope": "hamamatsu-office", "portal": "hamamatsu-office" },
+      { "id": "e1a", "name": "E1A 新静岡IC〜新城IC", "scope": "hamamatsu-office", "portal": "hamamatsu-office" }
+    ] }
+    ,{ "id": "kobe-office", "operatorId": "honshi", "name": "神戸管理センター", "routes": [
+      { "id": "e28", "name": "E28 神戸西IC〜津名一宮IC", "scope": "honshi-kobe-office", "portal": "honshi" }
+    ] }
+    ,{ "id": "naruto-office", "operatorId": "honshi", "name": "鳴門管理センター", "routes": [
+      { "id": "e28", "name": "E28 津名一宮IC〜鳴門IC", "scope": "honshi-naruto-office", "portal": "honshi" }
+    ] }
+    ,{ "id": "sakaide-office", "operatorId": "honshi", "name": "坂出管理センター", "routes": [
+      { "id": "e30", "name": "E30 早島IC〜坂出IC", "scope": "honshi-sakaide-office", "portal": "honshi" }
+    ] }
+    ,{ "id": "shimanami-onomichi-office", "operatorId": "honshi", "name": "しまなみ尾道管理センター", "routes": [
+      { "id": "e76", "name": "E76 西瀬戸尾道IC〜生口島南IC", "scope": "honshi-shimanami-onomichi-office", "portal": "honshi" }
+    ] }
+    ,{ "id": "shimanami-imabari-office", "operatorId": "honshi", "name": "しまなみ今治管理センター", "routes": [
+      { "id": "e76", "name": "E76 生口島南IC〜今治IC", "scope": "honshi-shimanami-imabari-office", "portal": "honshi" }
+    ] }
+  ]
+}

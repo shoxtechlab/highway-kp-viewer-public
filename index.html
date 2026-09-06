@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>全国版 | 高速道路KP Viewer</title>
+    <meta name="theme-color" content="#00973a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KP Viewer 全国版">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header id="topbar">
+        <a href="index.html" id="app-title">
+            <span class="app-title-main">KP Viewer</span>
+            <span class="app-title-sub">全国版</span>
+        </a>
+    </header>
+
+    <main class="home">
+        <section class="hero">
+            <p class="hero-kicker">NATIONAL</p>
+            <h1>全国版 KP Viewer</h1>
+            <p>路線を選択して、IC・PA・橋梁・トンネルをKPベースで確認します。</p>
+        </section>
+
+        <section class="route-panel">
+            <h2>路線一覧</h2>
+            <div id="route-list" class="route-list"></div>
+        </section>
+
+    </main>
+
+    <script src="./js/index.js" type="module"></script>
+    <footer class="copyright">
+        <span>© 2026 shoxtechlab. All Rights Reserved.</span>
+        <span> / </span>
+        <span>地図・路線形状: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors (ODbL)</a></span>
+        <span> / <a href="data-sources.html">出典・免責</a></span>
+    </footer>
+</body>
+</html>

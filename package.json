@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:data": "node scripts/validate-data.mjs",
+    "compile:route-data": "node scripts/compile-route-data.mjs",
+    "migrate:road-source": "node scripts/migrate-road-source.mjs",
+    "build": "node build-pages.mjs",
+    "dev": "node build-pages.mjs --exclude-private-route-data && node local-api-server.mjs",
+    "test:api": "node build-pages.mjs --exclude-private-route-data && node --test test/api.test.mjs test/pages-functions.test.mjs test/route-scope.test.mjs"
+  }
+}

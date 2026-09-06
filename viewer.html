@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>高速道路路線図</title>
+    <meta name="theme-color" content="#00973a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KP Viewer">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+</head>
+
+<body>
+    <header id="topbar">
+        <div class="app-brand-area">
+            <a href="index.html" id="app-title">
+                <span class="app-title-main">KP Viewer</span>
+                <span class="app-title-sub">高速道路路線図</span>
+            </a>
+        </div>
+
+        <div id="route-title"></div>
+
+        <button id="mobile-menu-toggle" type="button" hidden aria-label="表示設定を開く" aria-expanded="false" aria-controls="mobile-overflow-menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.7"></circle>
+                <circle cx="12" cy="12" r="1.7"></circle>
+                <circle cx="12" cy="19" r="1.7"></circle>
+            </svg>
+        </button>
+        <div id="mobile-overflow-menu" hidden>
+            <button id="mobile-theme-toggle" type="button" aria-pressed="false">
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20.2 15.5A8.5 8.5 0 0 1 8.5 3.8 8.5 8.5 0 1 0 20.2 15.5Z"></path>
+                </svg>
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
+                </svg>
+                <span>ダークモード</span>
+                <span class="theme-switch" aria-hidden="true"></span>
+            </button>
+            <div class="structure-visibility-controls" role="group" aria-label="構造物の表示">
+                <label class="structure-visibility-option">
+                    <input id="show-bridges" type="checkbox" checked>
+                    <span>橋梁</span>
+                </label>
+                <label class="structure-visibility-option">
+                    <input id="show-tunnels" type="checkbox" checked>
+                    <span>トンネル</span>
+                </label>
+            </div>
+        </div>
+
+        <button id="theme-toggle" type="button" hidden aria-label="ダークモードに切り替え" title="ダークモードに切り替え">
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.2 15.5A8.5 8.5 0 0 1 8.5 3.8 8.5 8.5 0 1 0 20.2 15.5Z"></path>
+            </svg>
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
+            </svg>
+        </button>
+    </header>
+
+    <main id="viewer-main">
+        <section id="kp-search" aria-label="キロポスト検索">
+            <label id="kp-system-field">
+                路線名
+                <select id="kp-system-input"></select>
+            </label>
+            <label>
+                方向
+                <select id="direction-input">
+                    <option value="up">上り</option>
+                    <option value="down" selected>下り</option>
+                </select>
+            </label>
+            <label>
+                キロポスト
+                <span class="kp-input-wrap">
+                    <input id="kp-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="例: 25.5">
+                    <span>KP</span>
+                </span>
+            </label>
+            <button id="kp-submit" type="button" aria-label="位置を表示" title="位置を表示">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"></path>
+                    <circle cx="12" cy="9" r="2.5"></circle>
+                </svg>
+                <span class="button-label desktop-label">位置を表示</span>
+                <span class="button-label mobile-label">表示</span>
+            </button>
+            <button id="gps-submit" type="button" aria-label="現在地" title="現在地">
+                <svg class="ui-icon location-arrow-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 11.5 20 4l-7.5 16-2.2-6.3L4 11.5Z"></path>
+                </svg>
+                <span class="button-label">現在地</span>
+            </button>
+            <p id="kp-error" role="alert"></p>
+            <p id="gps-status" role="status" aria-live="polite"></p>
+            <details id="gps-debug" hidden>
+                <summary>GPSデバッグ</summary>
+                <div class="gps-debug-fields">
+                    <label>
+                        緯度
+                        <input id="debug-lat" type="number" step="any" inputmode="decimal" placeholder="34.188410">
+                    </label>
+                    <label>
+                        経度
+                        <input id="debug-lon" type="number" step="any" inputmode="decimal" placeholder="133.069135">
+                    </label>
+                    <label>
+                        精度(m)
+                        <input id="debug-accuracy" type="number" min="0" step="1" inputmode="decimal" value="10">
+                    </label>
+                    <button id="debug-gps-submit" type="button">この位置を使用</button>
+                </div>
+            </details>
+        </section>
+        <div id="app" aria-live="polite"></div>
+    </main>
+    <aside id="kp-ui" hidden aria-live="polite"></aside>
+    <div id="mini-map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <footer class="copyright">
+        <span>© 2026 shoxtechlab. All Rights Reserved.</span>
+        <span> / </span>
+        <span>地図・路線形状: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors (ODbL)</a></span>
+        <span> / <a href="data-sources.html">出典・免責</a></span>
+    </footer>
+</body>

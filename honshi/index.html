@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>本州四国連絡高速道路 | 高速道路KP Viewer</title>
+    <meta name="theme-color" content="#00973a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KP Viewer 本四版">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="../icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-routes-src="../data/honshi-routes.json" data-offices-src="../data/honshi-offices.json" data-viewer-base="../viewer.html">
+    <header id="topbar">
+        <a href="./" id="app-title">
+            <span class="app-title-main">KP Viewer</span>
+            <span class="app-title-sub">本州四国連絡高速道路</span>
+        </a>
+        <div id="route-title">本州四国連絡高速道路</div>
+    </header>
+
+    <main class="home">
+        <section class="hero">
+            <p class="hero-kicker">HONSHU-SHIKOKU BRIDGE EXPRESSWAY</p>
+            <h1>本州四国連絡高速道路 KP Viewer</h1>
+            <p>E28・E30・E76の路線図を表示します。</p>
+        </section>
+
+        <section class="route-panel">
+            <h2>路線一覧</h2>
+            <div id="route-list" class="route-list"></div>
+        </section>
+
+        <section class="route-panel">
+            <h2>管理センター別表示</h2>
+            <p class="panel-description">担当区間だけを直接表示します。</p>
+            <div id="office-list" class="route-list"></div>
+        </section>
+    </main>
+
+    <script src="../js/index.js" type="module"></script>
+    <footer class="copyright">
+        <span>© 2026 shoxtechlab. All Rights Reserved.</span>
+        <span> / </span>
+        <span>地図・路線形状: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors (ODbL)</a></span>
+        <span> / <a href="../data-sources.html">出典・免責</a></span>
+    </footer>
+</body>
+</html>

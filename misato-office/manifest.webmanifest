@@ -1,0 +1,17 @@
+{
+  "id": "/misato-office/",
+  "name": "高速道路 KP Viewer 三郷管理事務所管内",
+  "short_name": "高速道路KP 三郷",
+  "start_url": "/misato-office/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f3f3",
+  "theme_color": "#00973a",
+  "lang": "ja",
+  "icons": [{
+    "src": "/icons/apple-touch-icon.png",
+    "sizes": "180x180",
+    "type": "image/png"
+  }]
+}
+
