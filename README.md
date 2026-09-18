@@ -20,6 +20,20 @@
 
 ![走行モード](docs/drive-mode-preview.png)
 
+## デモを開く
+
+すべてE28またはE30の収録データを使用します。
+
+- [E28 神戸淡路鳴門自動車道・全線](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&portal=honshi)
+- [E30 瀬戸中央自動車道・全線](https://highway-kp-viewer.pages.dev/viewer.html?route=e30&portal=honshi)
+- [E28 神戸管理センター区間](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&scope=honshi-kobe-office&portal=honshi)
+- [E28 鳴門管理センター区間](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&scope=honshi-naruto-office&portal=honshi)
+- [E30 坂出管理センター区間](https://highway-kp-viewer.pages.dev/viewer.html?route=e30&scope=honshi-sakaide-office&portal=honshi)
+- [E28 GPSデバッグ入力付きビューア](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&portal=honshi&debugGps=1)
+- [E28 走行モード表示デモ（50.0KP）](https://highway-kp-viewer.pages.dev/drive.html?route=e28&portal=honshi&demo=1&demoKp=50)
+
+走行モード表示デモはGPSを取得せず、画面確認用の固定値を表示します。
+
 ## 3分で説明すると
 
 高速道路の設備資料はKPで場所を表すことが多い一方、一般的な地図は緯度・経度が中心です。本アプリは、道路線形に沿った距離と公式資料・現地表示から得た基準点を組み合わせ、**KPと緯度経度を相互に扱える表示・検索基盤**にしています。
@@ -103,6 +117,8 @@ npm run build
 - 施設・構造物・KPは、道路管理者の公開資料や現地表示等を参照して整備しています
 - Google Street ViewはGoogle LLCが提供する外部サービスです。本プロジェクトはGoogleと提携・承認関係にありません
 - 表示値は参考情報です。工事、規制、測量、保守など正確性が必要な用途では、必ず道路管理者の最新資料を確認してください
+
+地図・航空写真・Street Viewを印刷、配布、転載またはデータ作成に使う場合は、サービスごとの条件が異なります。本プロジェクトの運用方針と確認表は [地図コンテンツ利用ガイド](docs/map-content-usage.md) にまとめています。
 
 ## ライセンス
 
