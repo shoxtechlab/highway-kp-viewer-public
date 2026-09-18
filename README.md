@@ -26,7 +26,7 @@
 
 主な利用イメージは次の3つです。
 
-1. 「E17の100.2KP」のような位置を、路線上の施設や構造物と一緒に確認する
+1. 「E28の50.0KP」のような位置を、路線上の施設や構造物と一緒に確認する
 2. GPS位置から、走行中の路線・方向・KPを推定する
 3. 管理事務所などの担当区間だけに絞った入口から同じビューアを利用する
 
@@ -65,9 +65,9 @@ flowchart LR
 公開環境では同一オリジンの `/api` を使用します。
 
 ```text
-GET /api/route/e17
-GET /api/position?route=e17&direction=down&kp=100.2
-GET /api/nearest?lat=36.10&lon=139.10&heading=25&speed=80&accuracy=12
+GET /api/route/e28
+GET /api/position?route=e28&direction=down&kp=50.0
+GET /api/nearest?route=e28&lat=34.38&lon=134.84&heading=200&speed=25&accuracy=12
 ```
 
 `/api/nearest` は `route` を省略すると収録路線全体から候補を検索し、最有力候補に加えて代替候補と判定差を返します。方位・速度・GPS精度が渡された場合は、上下線や内外回りなどの方向判定にも利用します。

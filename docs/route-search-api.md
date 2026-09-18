@@ -15,7 +15,7 @@ GET /api/route/{routeId}
 ## KPから座標
 
 ```http
-GET /api/position?route=e17&direction=down&kp=100.2
+GET /api/position?route=e28&direction=down&kp=50.0
 ```
 
 | パラメータ | 必須 | 内容 |
@@ -30,7 +30,7 @@ GET /api/position?route=e17&direction=down&kp=100.2
 ## 座標から路線・方向・KP
 
 ```http
-GET /api/nearest?lat=36.10&lon=139.10&heading=25&speed=80&accuracy=12
+GET /api/nearest?route=e28&lat=34.38&lon=134.84&heading=200&speed=25&accuracy=12
 ```
 
 | パラメータ | 必須 | 内容 |
@@ -48,12 +48,12 @@ GET /api/nearest?lat=36.10&lon=139.10&heading=25&speed=80&accuracy=12
 
 ```json
 {
-  "route": "e17",
-  "routeName": "関越自動車道",
+  "route": "e28",
+  "routeName": "神戸淡路鳴門自動車道",
   "section": null,
   "direction": "down",
   "directionLabel": "下り",
-  "kp": 100.2,
+  "kp": 50.0,
   "distanceM": 8.4,
   "snappedLat": 36.1,
   "snappedLon": 139.1,
