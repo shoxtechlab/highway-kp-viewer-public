@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { writeCompiledRoadSources } from "../lib/roadSourceCompiler.mjs";
+import { buildRouteSearchIndex } from "../lib/routeSearchIndex.mjs";
 
 const projectRoot = process.cwd();
 const outputRoot = resolve(process.argv[2] || "dist/data");
@@ -11,4 +12,10 @@ await writeCompiledRoadSources({
   outputRoot,
   routeIds: routes.map(route => route.id)
 });
+const searchIndex = await buildRouteSearchIndex({ projectRoot, routes });
+await mkdir(resolve(outputRoot, "_index"), { recursive: true });
+await writeFile(
+  resolve(outputRoot, "_index", "routes.json"),
+  `${JSON.stringify(searchIndex)}\n`
+);
 console.log(`Compiled ${routes.length} road metadata files into ${outputRoot}`);

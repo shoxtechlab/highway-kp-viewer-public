@@ -1,12 +1,5 @@
-dist/
+.history/
+tree.txt
 node_modules/
-.env
-.env.*
-.dev.vars
-
-# Private route datasets are intentionally absent from the public snapshot.
-data/**/road.json
-data/**/route.geojson
-data-source/
-data/facility-registry.json
-data/scope-definitions.json
+dist/
+.compiled-route-data/

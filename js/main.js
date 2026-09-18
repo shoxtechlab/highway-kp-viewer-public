@@ -44,6 +44,7 @@ async function main() {
     let previousKpSystemValue = "route";
     const kpSubmit = document.getElementById("kp-submit");
     const gpsSubmit = document.getElementById("gps-submit");
+    const driveModeToggle = document.getElementById("drive-mode-toggle");
     const kpError = document.getElementById("kp-error");
     const gpsStatus = document.getElementById("gps-status");
     const gpsDebug = document.getElementById("gps-debug");
@@ -371,13 +372,100 @@ async function main() {
         );
     }
 
+    function launchDriveMode() {
+        if (!navigator.geolocation) {
+            showGpsError("このブラウザは位置情報に対応していません。");
+            return;
+        }
+        if (!window.confirm(
+            "走行モードでは、終了するまで継続して位置情報を取得します。開始しますか？"
+        )) return;
+
+        updateDriveLaunchUI(true);
+        navigator.geolocation.getCurrentPosition(
+            prepareDriveMode,
+            error => {
+                updateDriveLaunchUI(false);
+                handleGpsError(error);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 3000
+            }
+        );
+        gpsStatus.className = "";
+        gpsStatus.textContent = "走行モードを開始する位置を確認しています。";
+    }
+
+    function updateDriveLaunchUI(loading) {
+        if (!driveModeToggle) return;
+        driveModeToggle.disabled = loading;
+        const label = driveModeToggle.querySelector("span");
+        if (label) label.textContent = loading ? "現在地を確認中…" : "走行モードを開始";
+    }
+
+    async function prepareDriveMode(position) {
+        const point = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            heading: position.coords.heading,
+            speed: position.coords.speed
+        };
+
+        try {
+            const query = new URLSearchParams({
+                lat: point.lat,
+                lon: point.lon,
+                preferredRoute: routeId,
+                preferredDirection: directionInput.value
+            });
+            if (Number.isFinite(point.heading)) query.set("heading", point.heading);
+            if (Number.isFinite(point.speed)) query.set("speed", point.speed);
+            if (Number.isFinite(point.accuracy)) query.set("accuracy", point.accuracy);
+            const match = await fetchApi(`/api/nearest?${query}`);
+            const allowedDistanceM = Math.max(300, point.accuracy * 2);
+
+            if (!match || match.distanceM > allowedDistanceM) {
+                const distance = match ? `（最寄りの収録路線まで約${formatDistance(match.distanceM)}）` : "";
+                showGpsError(`収録路線上にいないため、走行モードを開始できません。${distance}`);
+                return;
+            }
+
+            if (match.route !== routeId) {
+                const startDifferentRoute = window.confirm(
+                    `現在地は、開いている路線ではなく${match.routeName || match.route.toUpperCase()}です。\n` +
+                    "この路線で走行モードを開始しますか？"
+                );
+                if (!startDifferentRoute) {
+                    gpsStatus.className = "";
+                    gpsStatus.textContent = "走行モードを開始しませんでした。";
+                    return;
+                }
+            }
+            sessionStorage.setItem("kp-viewer-drive-start", JSON.stringify({ point, match }));
+            const target = new URL("drive.html", location.href);
+            target.searchParams.set("route", match.route);
+            if (portalId) target.searchParams.set("portal", portalId);
+            location.assign(target.href);
+        } catch (error) {
+            console.error(error);
+            showGpsError("現在地を路線へ照合できないため、走行モードを開始できませんでした。");
+        } finally {
+            updateDriveLaunchUI(false);
+        }
+    }
+
     async function handleGpsPosition(position) {
         resetGpsButton();
 
         await processGpsPoint({
             lat: position.coords.latitude,
             lon: position.coords.longitude,
-            accuracy: position.coords.accuracy
+            accuracy: position.coords.accuracy,
+            heading: position.coords.heading,
+            speed: position.coords.speed
         }, "GPS");
     }
 
@@ -417,6 +505,9 @@ async function main() {
             lon: point.lon,
             preferredDirection: directionInput.value
         });
+        if (Number.isFinite(point.heading)) query.set("heading", point.heading);
+        if (Number.isFinite(point.speed)) query.set("speed", point.speed);
+        if (Number.isFinite(point.accuracy)) query.set("accuracy", point.accuracy);
         if (selectedSections.length && selectedSections.length !== road.sections?.length) {
             query.set("sections", selectedSections.map(section => section.id).join(","));
         }
@@ -514,6 +605,7 @@ async function main() {
 
     kpSubmit.addEventListener("click", submitKp);
     gpsSubmit.addEventListener("click", locateCurrentPosition);
+    driveModeToggle?.addEventListener("click", launchDriveMode);
     debugGpsSubmit.addEventListener("click", submitDebugPosition);
     directionInput.addEventListener("change", updateKpInputBounds);
     kpSystemInput.addEventListener("change", () => {
@@ -959,13 +1051,15 @@ async function main() {
 
     const zoomControls = document.createElement("div");
     zoomControls.id = "zoom-controls";
+    const minManualZoom = 0.2;
+    const maxManualZoom = 8;
 
     const slider = document.createElement("input");
 
     slider.type = "range";
     slider.className = "zoom-slider";
-    slider.min = "0.5";
-    slider.max = "3.0";
+    slider.min = String(minManualZoom);
+    slider.max = String(maxManualZoom);
     slider.step = "0.1";
     slider.value = "1";
     slider.setAttribute("aria-label", "路線図の表示倍率");
@@ -977,17 +1071,19 @@ async function main() {
     zoomOut.type = "button";
     zoomOut.textContent = "−";
     zoomOut.setAttribute("aria-label", "縮小");
+    zoomOut.title = "縮小（長押し対応／PCは路線図上でShift＋ホイール）";
 
     const zoomIn = document.createElement("button");
     zoomIn.type = "button";
     zoomIn.textContent = "＋";
     zoomIn.setAttribute("aria-label", "拡大");
+    zoomIn.title = "拡大（長押し対応／PCは路線図上でShift＋ホイール）";
 
     function setZoom(value) {
-        STATE.zoom = Math.max(0.5, Math.min(3, Math.round(value * 10) / 10));
+        STATE.zoom = Math.max(minManualZoom, Math.min(maxManualZoom, Math.round(value * 10) / 10));
         slider.value = String(STATE.zoom);
-        zoomOut.disabled = STATE.zoom <= 0.5;
-        zoomIn.disabled = STATE.zoom >= 3;
+        zoomOut.disabled = STATE.zoom <= minManualZoom;
+        zoomIn.disabled = STATE.zoom >= maxManualZoom;
         updateScale();
         render();
     }
@@ -996,8 +1092,63 @@ async function main() {
         setZoom(Number(e.target.value));
     });
 
-    zoomOut.addEventListener("click", () => setZoom(STATE.zoom - 0.1));
-    zoomIn.addEventListener("click", () => setZoom(STATE.zoom + 0.1));
+    function bindZoomButton(button, delta) {
+        let holdDelay = null;
+        let holdRepeat = null;
+        let repeated = false;
+
+        const stopRepeating = () => {
+            clearTimeout(holdDelay);
+            clearInterval(holdRepeat);
+            holdDelay = null;
+            holdRepeat = null;
+        };
+
+        button.addEventListener("pointerdown", () => {
+            if (button.disabled) return;
+            repeated = false;
+            holdDelay = setTimeout(() => {
+                repeated = true;
+                setZoom(STATE.zoom + delta);
+                holdRepeat = setInterval(() => {
+                    if (button.disabled) {
+                        stopRepeating();
+                        return;
+                    }
+                    setZoom(STATE.zoom + delta);
+                }, 100);
+            }, 450);
+        });
+        for (const eventName of ["pointerup", "pointercancel", "pointerleave", "lostpointercapture"]) {
+            button.addEventListener(eventName, stopRepeating);
+        }
+        button.addEventListener("click", event => {
+            if (repeated) {
+                event.preventDefault();
+                repeated = false;
+                return;
+            }
+            setZoom(STATE.zoom + delta);
+        });
+        button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    bindZoomButton(zoomOut, -0.1);
+    bindZoomButton(zoomIn, 0.1);
+
+    let lastWheelZoomAt = 0;
+    container.addEventListener("wheel", event => {
+        if (!event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+        event.preventDefault();
+        const now = performance.now();
+        if (now - lastWheelZoomAt < 80) return;
+        const wheelDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+            ? event.deltaY
+            : event.deltaX;
+        if (wheelDelta === 0) return;
+        lastWheelZoomAt = now;
+        setZoom(STATE.zoom + (wheelDelta < 0 ? 0.1 : -0.1));
+    }, { passive: false });
     zoomButtons.addEventListener("dblclick", event => event.preventDefault());
 
     zoomButtons.append(zoomOut, zoomIn);

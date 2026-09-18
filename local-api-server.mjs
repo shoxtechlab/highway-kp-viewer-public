@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { createRouteService, apiError } from "./server/route-service.js";
 import { loadRoadSource } from "./lib/roadSourceCompiler.mjs";
+import { buildRouteSearchIndex } from "./lib/routeSearchIndex.mjs";
 
 const projectRoot = fileURLToPath(new URL(".", import.meta.url));
 const publicRoot = join(projectRoot, "dist");
@@ -22,6 +23,7 @@ const mimeTypes = {
   ".webmanifest": "application/manifest+json; charset=utf-8"
 };
 
+let localRouteIndex;
 const routeService = createRouteService(async (routeId, fileName) => {
   try {
     if (fileName === "road.json") {
@@ -31,6 +33,14 @@ const routeService = createRouteService(async (routeId, fileName) => {
   } catch (error) {
     if (error.code === "ENOENT") throw apiError(404, "Route data not found.");
     throw error;
+  }
+}, {
+  readRouteIndex: async () => {
+    if (!localRouteIndex) {
+      const routes = JSON.parse(await readFile(join(projectRoot, "data", "routes.json"), "utf8"));
+      localRouteIndex = JSON.stringify(await buildRouteSearchIndex({ projectRoot, routes }));
+    }
+    return localRouteIndex;
   }
 });
 
@@ -56,7 +66,11 @@ export async function handleApi(url) {
       routeId: url.searchParams.get("route"),
       lat: url.searchParams.get("lat"),
       lon: url.searchParams.get("lon"),
+      preferredRoute: url.searchParams.get("preferredRoute"),
       preferredDirection: url.searchParams.get("preferredDirection"),
+      heading: url.searchParams.get("heading"),
+      speed: url.searchParams.get("speed"),
+      accuracy: url.searchParams.get("accuracy"),
       sectionIds: url.searchParams.get("sections")?.split(",").filter(Boolean)
     });
   }

@@ -22,16 +22,18 @@ body {
     display: flex;
     align-items: end;
     justify-content: center;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 8px 16px;
     background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid #d9e2dc;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 #kp-search label {
     display: grid;
-    gap: 4px;
+    gap: 2px;
     color: #334139;
     font-size: 12px;
     font-weight: 700;
@@ -45,7 +47,7 @@ body {
 #kp-search input,
 #kp-submit,
 #gps-submit {
-    min-height: 40px;
+    min-height: 38px;
     border: 1px solid #aebbb3;
     border-radius: 8px;
     font: inherit;
@@ -102,6 +104,23 @@ body {
 .gps-debug-fields label { display: grid; gap: 4px; }
 .gps-debug-fields input { width: 110px !important; min-height: 36px !important; border: 1px solid #aebbb3 !important; }
 #debug-gps-submit { grid-column: 1 / -1; min-height: 36px; border: 1px solid #375e48; border-radius: 8px; background: #e8f5ec; color: #235338; font-weight: 700; cursor: pointer; }
+#drive-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-top: 1px solid #d9e2dc;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+#drive-mode-toggle:hover { background: #eef5f0; }
+#drive-mode-toggle.is-active { color: #b42318; }
 .load-error { margin: 40px auto; padding: 18px; color: #8a1c12; background: #fff1f0; border-radius: 8px; }
 
 #app {
@@ -168,8 +187,34 @@ svg {
     z-index: 9999;
 }
 
-.zoom-slider { display: block; }
-.zoom-buttons { display: none; }
+.zoom-slider { display: none; }
+.zoom-buttons {
+    display: flex;
+    overflow: hidden;
+    border: 1px solid #aebbb3;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+.zoom-buttons button {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 0;
+    border-right: 1px solid #d9e2dc;
+    background: transparent;
+    color: #26332c;
+    font: 700 18px/1 sans-serif;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.zoom-buttons button:last-child { border-right: 0; }
+.zoom-buttons button:disabled { color: #aeb7b1; }
+.zoom-buttons button:focus-visible { outline: 3px solid #f5b700; outline-offset: -3px; }
 
 #topbar {
     position: sticky;
@@ -396,6 +441,8 @@ body.dark-theme {
 }
 .dark-theme #gps-submit { color: #8fc1ff; background: #202a32; border-color: #597ca7; }
 .dark-theme #gps-submit:hover { background: #293947; }
+.dark-theme #drive-mode-toggle { border-top-color: #465149; }
+.dark-theme #drive-mode-toggle:hover { background: #29332d; }
 .dark-theme #kp-error,
 .dark-theme #gps-status { background: #191f1b; }
 .dark-theme #gps-status,
@@ -607,6 +654,9 @@ body.dark-theme {
     overflow: hidden;
 }
 
+/* 位置未選択時は、空の地図枠だけを表示しない。Leaflet初期化後は子要素が入る。 */
+#mini-map:empty { display: none; }
+
 .mini-map-resize-handle {
     position: absolute;
     left: 0;
@@ -702,6 +752,7 @@ body.mini-map-resizing {
         border: 1px solid #aebbb3;
         border-radius: 50%;
         background: rgba(255,255,255,0.96);
+        color: #1769c2;
         box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         cursor: pointer;
         touch-action: manipulation;
@@ -709,6 +760,7 @@ body.mini-map-resizing {
     .mini-map-toggle.is-active {
         border-color: #087f3e;
         background: #e8f5ec;
+        color: #087f3e;
     }
     .mini-map-toggle:focus-visible {
         outline: 3px solid #f5b700;
@@ -727,34 +779,6 @@ body.mini-map-resizing {
         left: 12px;
         bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
-    .zoom-slider { display: none; }
-    .zoom-buttons {
-        display: flex;
-        overflow: hidden;
-        border: 1px solid #aebbb3;
-        border-radius: 10px;
-        background: rgba(255,255,255,0.96);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-        touch-action: manipulation;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-    }
-    .zoom-buttons button {
-        min-width: 38px;
-        min-height: 38px;
-        padding: 0 10px;
-        border: 0;
-        border-right: 1px solid #d9e2dc;
-        background: transparent;
-        color: #26332c;
-        font: 700 18px/1 sans-serif;
-        cursor: pointer;
-        touch-action: manipulation;
-    }
-    .zoom-buttons button:last-child { border-right: 0; }
-    .zoom-buttons button:disabled { color: #aeb7b1; }
-    .zoom-buttons button:focus-visible { outline: 3px solid #f5b700; outline-offset: -3px; }
 }
 
 .home {

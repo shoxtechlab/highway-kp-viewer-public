@@ -128,6 +128,7 @@ test("position endpoint returns one interpolated point without route geometry", 
   );
   assert.equal(result.route, "e76");
   assert.equal(result.direction, "down");
+  assert.equal(result.directionLabel, "下り");
   assert.equal(result.kp, 20.5);
   assert.ok(Number.isFinite(result.lat));
   assert.ok(Number.isFinite(result.lon));
@@ -143,6 +144,83 @@ test("nearest endpoint maps a known E76 point to its direction and KP", async ()
   assert.equal(result.direction, "down");
   assert.ok(Math.abs(result.kp - 46.9) < 0.02);
   assert.ok(result.distanceM < 10);
+});
+
+test("API returns configured direction labels without changing internal direction", async () => {
+  const position = await handleApi(new URL(
+    "http://local/api/position?route=c4&section=keno-east&direction=down&kp=250"
+  ));
+  assert.equal(position.direction, "down");
+  assert.equal(position.directionLabel, "外回り");
+});
+
+test("nearest uses travel heading to distinguish up and down", async () => {
+  const road = { id: "test-route", name: "Test route" };
+  const geometry = JSON.stringify({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { name: "down", chainage_m: [0, 1000] },
+        geometry: { type: "LineString", coordinates: [[139, 36], [139.01, 36]] }
+      },
+      {
+        type: "Feature",
+        properties: { name: "up", chainage_m: [0, 1000] },
+        geometry: { type: "LineString", coordinates: [[139, 36.0002], [139.01, 36.0002]] }
+      }
+    ]
+  });
+  const service = createRouteService(async (_routeId, fileName) =>
+    fileName === "road.json" ? JSON.stringify(road) : geometry
+  );
+  const eastbound = await service.getNearest({
+    routeId: "test-route", lat: 36.0001, lon: 139.005, heading: 90, speed: 20
+  });
+  const westbound = await service.getNearest({
+    routeId: "test-route", lat: 36.0001, lon: 139.005, heading: 270, speed: 20
+  });
+  assert.equal(eastbound.direction, "down");
+  assert.equal(westbound.direction, "up");
+  assert.equal(eastbound.directionMethod, "position-and-heading");
+  assert.equal(eastbound.ambiguous, false);
+});
+
+test("nearest can discover a route when route is omitted", async () => {
+  const roads = {
+    near: { id: "near", name: "Near route" },
+    far: { id: "far", name: "Far route" }
+  };
+  const geometry = latitude => JSON.stringify({
+    type: "FeatureCollection",
+    features: ["down", "up"].map((name, offset) => ({
+      type: "Feature",
+      properties: { name, chainage_m: [0, 1000] },
+      geometry: {
+        type: "LineString",
+        coordinates: [[139, latitude + offset * 0.0001], [139.01, latitude + offset * 0.0001]]
+      }
+    }))
+  });
+  const service = createRouteService(
+    async (routeId, fileName) => fileName === "road.json"
+      ? JSON.stringify(roads[routeId])
+      : geometry(routeId === "near" ? 36 : 36.05),
+    {
+      readRouteIndex: async () => JSON.stringify({
+        routes: [
+          { id: "near", name: "Near route", bbox: [139, 36, 139.01, 36.0001] },
+          { id: "far", name: "Far route", bbox: [139, 36.05, 139.01, 36.0501] }
+        ]
+      })
+    }
+  );
+  const result = await service.getNearest({ lat: 36, lon: 139.005 });
+  assert.equal(result.route, "near");
+  assert.equal(result.routeName, "Near route");
+  assert.equal(result.routeMethod, "nearest-route");
+  assert.equal(result.alternatives[0].route, "far");
+  assert.ok(result.alternatives[0].distanceDifferenceM > 5000);
 });
 
 test("invalid API input is rejected", async () => {

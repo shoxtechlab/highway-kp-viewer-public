@@ -29,6 +29,7 @@ const publicEntries = [
   "app-version.json",
   "manifest.webmanifest",
   "viewer.html",
+  "drive.html",
   "data-sources.html",
   "css",
   "js",
