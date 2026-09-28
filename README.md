@@ -59,6 +59,8 @@
 - [津名一宮ICのランプページを試す](https://highway-kp-viewer.pages.dev/prototypes/ic-ramps/?ic=tsuna-ichinomiya)
 - [設計・使い方・公開範囲](docs/ic-ramp-pages.md)
 
+![津名一宮ICのランプページ](docs/e28-tsuna-ichinomiya-ramp-light-pc.jpg)
+
 ### ユーザー編集地点・区間
 
 事故、工事、電気室、バスストップ、個人用メモなどを地点またはKP区間として追加できます。精査済みのIC・橋梁・トンネルとは別に保存するため、基礎データを壊しません。
@@ -70,6 +72,10 @@
 
 [操作方法・保存先・API・Cloudflare設定](docs/user-annotations.md)
 
+![E28のユーザー編集モード](docs/e28-annotation-editor-light-pc.jpg)
+
+![44.8KPへ追加された工事デモ](docs/e28-annotation-result-light-pc.jpg)
+
 ## 構成
 
 ```mermaid
@@ -77,15 +83,19 @@ flowchart LR
   U[ブラウザ / PWA] --> P[Cloudflare Pages]
   P --> F[Pages Functions API]
   F --> R[(Cloudflare R2\n非公開の高精度路線データ)]
-  O[OpenStreetMap線形] --> C[ローカル加工・KP校正]
-  M[道路台帳・現地KP確認] --> C
+  O[OpenStreetMap線形] --> C[非公開の加工・品質確認]
+  M[公開資料・現地確認] --> C
   C --> R
 ```
 
 - フロントエンド: HTML / CSS / Vanilla JavaScript
 - 配信・API: Cloudflare Pages / Pages Functions
 - 非公開データ: Cloudflare R2
-- 元線形: OpenStreetMapを加工し、手作業の基準点でKPを校正
+- 元線形: OpenStreetMap由来データを用途に合わせて加工
+
+OSM由来データは、用途に合わせて加工し、確認を行ったうえで利用しています。具体的な加工手順、内部ロジック、基準点、高精度データは公開していません。
+
+[OSM由来の路線データについて](docs/osm-derived-route-data.md)
 
 ## 公開リポジトリの位置づけ
 
