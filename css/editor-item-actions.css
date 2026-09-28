@@ -1,0 +1,8 @@
+.editor-item-actions {
+    display: flex !important;
+    gap: 2px !important;
+}
+
+.editor-item-actions button:first-child {
+    color: #1769d2;
+}

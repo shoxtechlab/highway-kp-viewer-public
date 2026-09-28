@@ -19,6 +19,10 @@ const THEME_CONTROLS_HTML = `
 export function initTheme({ onChange } = {}) {
     const topbar = document.getElementById("topbar");
     if (!topbar) return;
+    // 管理事務所ページでは共通ナビゲーションと路線一覧の両方から呼ばれる。
+    // 二重登録すると1クリックで開閉が2回走るため、初期化はページごとに一度だけにする。
+    if (topbar.dataset.themeInitialized === "true") return;
+    topbar.dataset.themeInitialized = "true";
     if (!document.getElementById("theme-toggle")) {
         topbar.insertAdjacentHTML("beforeend", THEME_CONTROLS_HTML);
     }
@@ -36,11 +40,12 @@ export function initTheme({ onChange } = {}) {
         const isDark = theme === "dark";
         document.body.classList.toggle("dark-theme", isDark);
         document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        document.documentElement.style.backgroundColor = "#00973a";
         themeToggle.setAttribute("aria-pressed", String(isDark));
         themeToggle.setAttribute("aria-label", isDark ? "ライトモードに切り替え" : "ダークモードに切り替え");
         themeToggle.title = themeToggle.getAttribute("aria-label");
         mobileThemeToggle.setAttribute("aria-pressed", String(isDark));
-        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", isDark ? "#152019" : "#00973a");
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#00973a");
         if (notify) onChange?.(theme);
     };
 

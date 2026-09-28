@@ -1,0 +1,394 @@
+/*
+ * KP Viewer UI v2
+ * Activated only with ?ui=v2 so the established interface remains available.
+ */
+html.ui-v2 {
+    --v2-green: #087f3e;
+    --v2-green-dark: #075e31;
+    --v2-blue: #1769d2;
+    --v2-surface: rgba(255, 255, 255, 0.96);
+    --v2-ink: #18251d;
+    --v2-muted: #607067;
+    --v2-line: #d5dfd8;
+    --v2-shadow: 0 12px 36px rgba(21, 45, 30, 0.18);
+    color-scheme: light;
+}
+
+html.ui-v2 body {
+    min-height: 100dvh;
+    color: var(--v2-ink);
+    /* Safariはfixedヘッダーではなくbody背景から上端色を選ぶことがある。 */
+    background: #00973a;
+}
+
+html.ui-v2 #viewer-main {
+    background:
+        radial-gradient(circle at 85% 0%, rgba(8, 127, 62, 0.08), transparent 32rem),
+        #edf2ee;
+}
+
+html.ui-v2 #topbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 58px;
+    padding: 0 18px;
+    gap: 13px;
+    background: #00973a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 5px 22px rgba(9, 48, 27, 0.22);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+html.ui-v2 .app-title-sub { display: none; }
+html.ui-v2 #app-title { min-width: 86px; }
+html.ui-v2 .app-title-main { font-size: 15px; letter-spacing: 0; }
+html.ui-v2 #route-title {
+    min-width: 0;
+    padding-left: 13px;
+    overflow: hidden;
+    border-left-color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+html.ui-v2 #viewer-main {
+    min-height: 100dvh;
+    padding-top: 58px;
+}
+
+html.ui-v2 #kp-search {
+    position: fixed;
+    z-index: 950;
+    display: grid;
+    align-content: start;
+    justify-content: stretch;
+    gap: 12px;
+    width: 306px;
+    padding: 18px;
+    background: var(--v2-surface);
+    border: 1px solid rgba(108, 132, 117, 0.2);
+    box-shadow: var(--v2-shadow);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+html.ui-v2 #kp-search label {
+    gap: 6px;
+    color: var(--v2-muted);
+    font-size: 11px;
+    letter-spacing: .02em;
+}
+
+html.ui-v2 #kp-search select,
+html.ui-v2 #kp-search input,
+html.ui-v2 .kp-input-wrap {
+    min-height: 46px;
+    color: var(--v2-ink);
+    background: #f7faf8;
+    border-color: var(--v2-line);
+    border-radius: 11px;
+}
+
+html.ui-v2 #kp-search input { width: 100%; font-size: 18px; font-weight: 750; }
+html.ui-v2 .kp-input-wrap { padding-right: 12px; color: var(--v2-muted); }
+html.ui-v2 #kp-submit,
+html.ui-v2 #gps-submit {
+    min-height: 48px;
+    border-radius: 12px;
+    box-shadow: none;
+}
+html.ui-v2 #kp-submit { background: var(--v2-green); }
+html.ui-v2 #gps-submit { color: var(--v2-blue); background: #edf5ff; border-color: #bfd5f2; }
+html.ui-v2 #kp-error,
+html.ui-v2 #gps-status { max-width: none; line-height: 1.45; }
+
+html.ui-v2 #app {
+    align-items: flex-start;
+    min-height: calc(100dvh - 58px);
+    padding: 18px 18px 36px 342px;
+}
+
+html.ui-v2 #app > svg {
+    overflow: visible;
+    border: 1px solid rgba(100, 120, 108, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 10px 32px rgba(30, 50, 38, 0.1);
+}
+
+html.ui-v2 #kp-ui { right: 18px; bottom: 18px; }
+html.ui-v2 .street-view-button {
+    min-height: 48px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--v2-blue);
+    box-shadow: 0 7px 20px rgba(23, 105, 210, 0.26);
+}
+html.ui-v2 #zoom-controls { right: 18px; bottom: 76px; }
+html.ui-v2 .zoom-buttons { border-radius: 13px; box-shadow: 0 7px 20px rgba(21,45,30,.15); }
+html.ui-v2 .zoom-buttons button { min-width: 44px; min-height: 44px; }
+html.ui-v2 #mini-map { top: 76px; right: 18px; border-radius: 14px; box-shadow: var(--v2-shadow); }
+html.ui-v2 .copyright { margin-left: 324px; }
+
+html.ui-v2 body.dark-theme {
+    --v2-surface: rgba(27, 35, 30, 0.97);
+    --v2-ink: #eff5f1;
+    --v2-muted: #b6c3bb;
+    --v2-line: #526158;
+    color-scheme: dark;
+}
+html.ui-v2 body.dark-theme { background: #00973a; }
+html.ui-v2 body.dark-theme #viewer-main { background: #101512; }
+html.ui-v2 body.dark-theme #topbar { background: #00973a; }
+html.ui-v2 .dark-theme #kp-search select,
+html.ui-v2 .dark-theme #kp-search input,
+html.ui-v2 .dark-theme .kp-input-wrap { color: #eff5f1; background: #242e28; }
+
+@media (min-width: 800px) {
+    html.ui-v2 #kp-search {
+        top: 76px;
+        bottom: auto;
+        left: 18px;
+        border-radius: 16px;
+    }
+    html.ui-v2 #kp-submit,
+    html.ui-v2 #gps-submit { width: 100%; justify-content: center; }
+
+    /* PCでは補助操作を検索フロートと同じ左端へまとめる。 */
+    html.ui-v2 #mini-map {
+        right: auto;
+        left: 18px;
+        width: 306px;
+        height: 230px;
+    }
+    html.ui-v2 #kp-ui {
+        right: auto;
+        left: 18px;
+        align-items: flex-start;
+    }
+    html.ui-v2 #zoom-controls {
+        right: auto;
+        left: 18px;
+    }
+    html.ui-v2 .street-view-button {
+        min-height: 56px;
+        padding-inline: 22px;
+        font-size: 16px;
+    }
+    html.ui-v2 .street-view-button .ui-icon {
+        width: 21px;
+        height: 21px;
+    }
+    html.ui-v2 .zoom-buttons button {
+        min-width: 52px;
+        min-height: 52px;
+        font-size: 21px;
+    }
+
+    /* 走行方向は重要度が高いため、PCでは他の入力より大きく表示する。 */
+    html.ui-v2 #direction-input {
+        font-size: 20px;
+        font-weight: 800;
+    }
+}
+
+@media (max-width: 799px) {
+    html.ui-v2 #topbar {
+        height: calc(52px + env(safe-area-inset-top, 0px));
+        padding: env(safe-area-inset-top, 0px) 10px 0;
+        gap: 7px;
+    }
+    html.ui-v2 #app-title { min-width: 76px; }
+    html.ui-v2 .app-title-main { font-size: 14px; }
+    html.ui-v2 #route-title { padding-left: 8px; font-size: clamp(11px, 3.3vw, 14px); }
+    html.ui-v2 #mobile-menu-toggle:not([hidden]) { flex-basis: 38px; width: 38px; height: 38px; }
+    html.ui-v2 #viewer-main { padding-top: calc(52px + env(safe-area-inset-top, 0px)); }
+
+    html.ui-v2 #kp-search {
+        inset: auto 8px calc(8px + env(safe-area-inset-bottom, 0px));
+        grid-template-columns: minmax(0, 1.15fr) minmax(58px, .65fr) minmax(0, 1.25fr) 50px 50px;
+        gap: 6px;
+        width: auto;
+        padding: 9px;
+        border-radius: 17px;
+    }
+    html.ui-v2 #kp-search label { min-width: 0; gap: 3px; font-size: 9px; }
+    html.ui-v2 #kp-system-field { grid-column: 1; }
+    html.ui-v2 #kp-search label:has(#direction-input) { grid-column: 2; }
+    html.ui-v2 #kp-search label:has(#kp-input) { grid-column: 3; }
+    html.ui-v2 #kp-search select,
+    html.ui-v2 #kp-search input,
+    html.ui-v2 .kp-input-wrap { min-height: 43px; }
+    html.ui-v2 #kp-search select { width: 100%; padding: 5px; font-size: 13px; }
+    html.ui-v2 #direction-input { width: 100% !important; }
+    html.ui-v2 #kp-search input { width: 100%; padding: 5px 3px 5px 8px; font-size: 16px; }
+    html.ui-v2 .kp-input-wrap { padding-right: 7px; font-size: 11px; }
+    html.ui-v2 #kp-submit,
+    html.ui-v2 #gps-submit { grid-row: 1; width: 50px; min-height: 58px; align-self: end; padding: 0; border-radius: 13px; }
+    html.ui-v2 #kp-submit { grid-column: 4; font-size: 12px; }
+    html.ui-v2 #gps-submit { grid-column: 5; }
+    html.ui-v2 #kp-submit .mobile-label { display: inline; }
+    html.ui-v2 #kp-error,
+    html.ui-v2 #gps-status {
+        position: static;
+        grid-column: 1 / -1;
+        max-width: none;
+        padding: 0 4px;
+        background: transparent;
+        font-size: 10px;
+    }
+    html.ui-v2 #gps-debug { grid-column: 1 / -1; }
+    html.ui-v2 .gps-debug-fields { top: auto; bottom: 100px; }
+
+    html.ui-v2 #app {
+        min-height: 100dvh;
+        padding: 10px 8px calc(126px + env(safe-area-inset-bottom, 0px));
+    }
+    html.ui-v2 #app > svg { border: 0; border-radius: 13px; box-shadow: 0 5px 18px rgba(30,50,38,.08); }
+
+    html.ui-v2 #kp-ui {
+        right: 10px;
+        left: auto;
+        bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+        gap: 7px;
+    }
+    html.ui-v2 .mini-map-toggle,
+    html.ui-v2 .street-view-button { min-height: 42px; height: 42px; border-radius: 13px; }
+    html.ui-v2 .street-view-button { padding-inline: 12px; }
+    html.ui-v2 #zoom-controls {
+        right: auto;
+        left: 10px;
+        bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+    }
+    html.ui-v2 #mini-map {
+        right: 10px;
+        bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+        left: auto;
+        width: min(230px, calc(100vw - 20px));
+        border-radius: 14px;
+    }
+    html.ui-v2 .copyright { display: none; }
+}
+
+@supports not selector(:has(*)) {
+    @media (max-width: 799px) {
+        html.ui-v2 #kp-search label { grid-column: auto; }
+    }
+}
+
+/* Completely new route-diagram visual language. */
+html.ui-v2 .route-diagram-v2 .v2-canvas { fill: #fbfdfb; }
+html.ui-v2 .route-diagram-v2 .v2-axis-title {
+    fill: #8a9990;
+    font: 700 9px/1 system-ui, sans-serif;
+    letter-spacing: .16em;
+}
+html.ui-v2 .route-diagram-v2 .v2-kp-spine { stroke: #c7d2cb; stroke-width: 2; }
+html.ui-v2 .route-diagram-v2 .v2-kp-dot { fill: #aab8af; stroke: #fbfdfb; stroke-width: 2; }
+html.ui-v2 .route-diagram-v2 .v2-kp-dot.major { fill: #087f3e; }
+html.ui-v2 .route-diagram-v2 .v2-kp-label {
+    fill: #718077;
+    font: 750 11px/1 system-ui, sans-serif;
+    paint-order: stroke;
+    stroke: #fbfdfb;
+    stroke-width: 4px;
+}
+html.ui-v2 .route-diagram-v2 .v2-rail {
+    fill: #edf0ee;
+    stroke: #66736c;
+    stroke-width: 2;
+}
+html.ui-v2 .route-diagram-v2 .v2-direction-chip rect { fill: #26372e; }
+html.ui-v2 .route-diagram-v2 .v2-direction-chip text {
+    fill: #fff;
+    font: 750 12px/1 system-ui, sans-serif;
+}
+html.ui-v2 .route-diagram-v2 .v2-flow-arrow {
+    fill: rgba(255,255,255,.9);
+    font: 800 13px/1 system-ui, sans-serif;
+    pointer-events: none;
+}
+html.ui-v2 .route-diagram-v2 .v2-connector {
+    fill: none;
+    stroke: #a7b4ac;
+    stroke-width: 1.3;
+    pointer-events: none;
+}
+html.ui-v2 .route-diagram-v2 .v2-anchor-dot { fill: #fff; stroke: #738078; stroke-width: 1.5; pointer-events: none; }
+
+html.ui-v2 .route-diagram-v2 .v2-card-bg {
+    fill: #087f3e;
+    stroke: #087f3e;
+    stroke-width: 1.5;
+    filter: drop-shadow(0 2px 2px rgba(20,50,31,.08));
+}
+html.ui-v2 .route-diagram-v2 .v2-card-name {
+    fill: #fff;
+    font: 750 16px/1 system-ui, sans-serif;
+    dominant-baseline: middle;
+}
+html.ui-v2 .route-diagram-v2 .type-ic .v2-card-name,
+html.ui-v2 .route-diagram-v2 .type-jct .v2-card-name,
+html.ui-v2 .route-diagram-v2 .type-jct_ic .v2-card-name,
+html.ui-v2 .route-diagram-v2 .type-sic .v2-card-name,
+html.ui-v2 .route-diagram-v2 .type-sa .v2-card-name,
+html.ui-v2 .route-diagram-v2 .type-pa .v2-card-name {
+    font-size: 20px;
+    font-weight: 800;
+}
+html.ui-v2 .route-diagram-v2 .is-rest .v2-card-bg { fill: #fff; stroke: #087f3e; }
+html.ui-v2 .route-diagram-v2 .is-rest .v2-card-name { fill: #087f3e; }
+html.ui-v2 .route-diagram-v2 .is-sic .v2-card-bg { fill: #7b2b83; stroke: #7b2b83; }
+html.ui-v2 .route-diagram-v2 .v2-ramp-icon { stroke: #fff; }
+html.ui-v2 .route-diagram-v2 .is-rest .v2-ramp-icon { stroke: #087f3e; }
+html.ui-v2 .route-diagram-v2 .v2-etc-badge rect { fill: #7b2b83; stroke: rgba(255,255,255,.8); stroke-width: 1; }
+html.ui-v2 .route-diagram-v2 .v2-etc-badge text { fill: #fff; font: italic 800 10px/1 system-ui, sans-serif; }
+
+html.ui-v2 .route-diagram-v2 .v2-structure-band {
+    opacity: .92;
+    stroke: rgba(255,255,255,.7);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+html.ui-v2 .route-diagram-v2 .v2-structure-band.bridge { fill: #ed9227; }
+html.ui-v2 .route-diagram-v2 .v2-structure-band.tunnel { fill: #2779bd; }
+html.ui-v2 .route-diagram-v2 .v2-structure-band.is-selected { stroke: #e1251b; stroke-width: 2; }
+html.ui-v2 .route-diagram-v2 .v2-tag-bg { stroke-width: 1; }
+html.ui-v2 .route-diagram-v2 .v2-structure-tag.bridge .v2-tag-bg { fill: #fff7eb; stroke: #f0bd78; }
+html.ui-v2 .route-diagram-v2 .v2-structure-tag.tunnel .v2-tag-bg { fill: #edf7ff; stroke: #91bee0; }
+html.ui-v2 .route-diagram-v2 .v2-structure-tag.bridge .v2-structure-symbol { fill: #ed9227; }
+html.ui-v2 .route-diagram-v2 .v2-structure-tag.tunnel .v2-structure-symbol { fill: #2779bd; }
+html.ui-v2 .route-diagram-v2 .v2-tag-name {
+    fill: #28352d;
+    font: 750 14px/1 system-ui, sans-serif;
+}
+html.ui-v2 .route-diagram-v2 .v2-section-chip { fill: #fff; stroke: #97a69d; stroke-width: 1; }
+html.ui-v2 .route-diagram-v2 .v2-section-text { fill: #36453c; font: 750 10px/1 system-ui, sans-serif; }
+html.ui-v2 .route-diagram-v2 .v2-route-gap { fill: #fbfdfb; stroke: #7d8c83; stroke-width: 1.5; stroke-dasharray: 5 4; }
+html.ui-v2 .route-diagram-v2 .v2-route-gap.unopened { stroke: #c86436; }
+html.ui-v2 .route-diagram-v2 .v2-gap-text { fill: #ad4d27; font: 800 11px/1 system-ui, sans-serif; }
+html.ui-v2 .route-diagram-v2 .v2-focus-ring { fill: rgba(255,255,255,.9); stroke: #e1251b; stroke-width: 3; vector-effect: non-scaling-stroke; }
+html.ui-v2 .route-diagram-v2 .v2-focus-dot { fill: #e1251b; }
+html.ui-v2 .route-diagram-v2 .v2-focus-label {
+    fill: #c91f17;
+    font: 800 11px/1 system-ui, sans-serif;
+    paint-order: stroke;
+    stroke: #fff;
+    stroke-width: 4px;
+}
+
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-canvas { fill: #161d19; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-kp-spine { stroke: #56645b; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-kp-dot { stroke: #161d19; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-kp-label { fill: #b7c3bb; stroke: #161d19; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-rail { fill: #242c28; stroke: #89958e; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-card-name { fill: #fff; }
+html.ui-v2 .dark-theme .route-diagram-v2 .is-rest .v2-card-name { fill: #087f3e; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-structure-tag.bridge .v2-tag-bg { fill: #fff7eb; stroke: #f0bd78; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-structure-tag.tunnel .v2-tag-bg { fill: #edf7ff; stroke: #91bee0; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-tag-name { fill: #28352d; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-section-chip { fill: #263029; stroke: #78867d; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-section-text { fill: #eef4f0; }
+html.ui-v2 .dark-theme .route-diagram-v2 .v2-route-gap { fill: #161d19; }

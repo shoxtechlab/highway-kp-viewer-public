@@ -63,6 +63,15 @@ for (const entry of publicEntries) {
   });
 }
 
+// ICランプ図はベータ公開対象だけを明示的に配布する。
+// 自動抽出した未確認地点や抽出スクリプトは公開成果物へ含めない。
+const publicRampFiles = ["index.html", "style.css", "app.js", "tsuna-ichinomiya.json"];
+const publicRampDir = join(outputDir, "prototypes", "ic-ramps");
+await mkdir(publicRampDir, { recursive: true });
+for (const file of publicRampFiles) {
+  await cp(join(projectRoot, "prototypes", "ic-ramps", file), join(publicRampDir, file));
+}
+
 if (includePrivateRouteData) {
   await writeCompiledRoadSources({
     projectRoot,
@@ -100,9 +109,12 @@ function renderPortal(values) {
 
 function renderLinks(items) {
   if (!items.length) return '<p class="route-unavailable">表示できる入口は準備中です。</p>';
-  return `<div class="route-list">${items.map(item =>
-    `<a href="${escapeHtml(item.href)}">${escapeHtml(item.name)}</a>`
-  ).join("\n")}</div>`;
+  return `<div class="route-list">${items.map(item => {
+    const routeId = String(item.route || item.id || "").toUpperCase();
+    const code = routeId.match(/^[EC]\d+[A-Z]*/)?.[0];
+    const label = code ? String(item.name).replace(new RegExp(`^${code}\\s*`, "i"), "") : item.name;
+    return `<a class="route-entry" href="${escapeHtml(item.href)}">${code ? `<span class="route-code">${escapeHtml(code)}</span>` : ""}<span class="route-entry-name">${escapeHtml(label)}</span><span class="route-entry-arrow" aria-hidden="true">›</span>${item.routeMark ? `<span class="honshi-route-watermark" aria-hidden="true">${escapeHtml(item.routeMark)}</span>` : ""}</a>`;
+  }).join("\n")}</div>`;
 }
 
 function viewerHref(item) {
@@ -121,6 +133,7 @@ async function writePortal(relativeDir, html) {
 }
 
 const { operators, branches, offices } = organizations;
+const honshiRouteMark = item => ({ e28: "A", e30: "D", e76: "E" })[String(item.route || item.id || "").toLowerCase()] || "";
 
 await writePortal("operators", renderPortal({
   TITLE: "道路会社",
@@ -178,13 +191,13 @@ for (const operator of operators) {
       ? "路線別表示"
       : (childBranches.length ? "支社・管理拠点" : "管理拠点"),
     LIST_CONTENT: renderLinks(featuredRoutes.length
-      ? featuredRoutes.map(item => ({ name: item.name, href: viewerHref(item) }))
+      ? featuredRoutes.map(item => ({ id: item.id, route: item.route, name: item.name, href: viewerHref(item), routeMark: operator.id === "honshi" ? honshiRouteMark(item) : "" }))
       : hierarchyLinks),
     EXTRA_CONTENT: featuredOffices.length
       ? `<section class="route-panel">
       <h2>管理センター別表示</h2>
       <p class="panel-description">担当区間だけを直接表示します。</p>
-      ${renderLinks(featuredOffices.map(item => ({ name: item.name, href: viewerHref(item) })))}
+      ${renderLinks(featuredOffices.map(item => ({ id: item.id, route: item.route, name: item.name, href: viewerHref(item), routeMark: operator.id === "honshi" ? honshiRouteMark(item) : "" })))}
     </section>`
       : "",
     SCRIPT: '<script src="/js/appVersionNotice.js" type="module"></script>'

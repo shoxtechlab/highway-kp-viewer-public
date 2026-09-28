@@ -1,10 +1,13 @@
 import { STATE, LAYOUT } from "./config.js";
 import "./appVersionNotice.js";
 import { createExpresswaySvg } from "./svg.js";
+import { createExpresswaySvgV2 } from "./svgV2.js";
 import { fitSvgLabels } from "./labelFit.js";
+import { addRampPreviewLinks } from "./rampPreview.js";
 import { mouseYToKp, getSvgPoint, kpToY } from "./utils.js";
 import { initTheme } from "./theme.js";
 import { resolveRouteScope } from "./routeScope.js";
+import { initEditorPreview, renderEditorRecords } from "./editorPreview.js";
 
 async function fetchApi(path) {
     const response = await fetch(path);
@@ -22,6 +25,8 @@ async function main() {
     const portalId = params.get("portal");
     const requestedSectionIds = params.get("section")?.split(",").filter(Boolean) || [];
     const debugGpsEnabled = params.get("debugGps") === "1";
+    // v2を標準UIとし、旧UIは比較・退避用に ?ui=v1 を明示した場合だけ使う。
+    const useV2Renderer = params.get("ui") !== "v1";
 
     const routeData = await fetchApi(`/api/route/${routeId}`);
     const road = routeData.road;
@@ -36,6 +41,7 @@ async function main() {
     const viewRoad = scope ? createScopedRoad(sectionedRoad, scope) : sectionedRoad;
 
     const container = document.getElementById("app");
+    const kpSearch = document.getElementById("kp-search");
     const kpUI = document.getElementById("kp-ui");
     const kpInput = document.getElementById("kp-input");
     const directionInput = document.getElementById("direction-input");
@@ -55,6 +61,10 @@ async function main() {
     const appTitle = document.getElementById("app-title");
     const routeTitle = document.getElementById("route-title");
     const structureVisibility = { BRIDGE: true, TUNNEL: true };
+    const minManualZoom = 0.2;
+    const maxManualZoom = 8;
+    let userLayerRecords = [];
+    let hiddenUserLayerTypes = new Set();
     initTheme({ onChange: () => render() });
 
     // 内部のup/downはAPI互換のため固定し、表示名だけ路線設定で変更する。
@@ -73,6 +83,19 @@ async function main() {
     let mobileMiniMapOpen = false;
     let lastMiniMapPosition = null;
 
+    // PC版v2のミニマップは、内容量が変わる検索フロートの直下へ追従させる。
+    function positionDesktopMiniMap() {
+        if (!miniMapEl || !kpSearch) return;
+        if (STATE.isMobile || !document.documentElement.classList.contains("ui-v2")) {
+            miniMapEl.style.removeProperty("top");
+            return;
+        }
+        miniMapEl.style.top = `${Math.round(kpSearch.getBoundingClientRect().bottom + 12)}px`;
+    }
+
+    new ResizeObserver(positionDesktopMiniMap).observe(kpSearch);
+    positionDesktopMiniMap();
+
     gpsDebug.hidden = !debugGpsEnabled;
 
 
@@ -90,6 +113,21 @@ async function main() {
     const home = scope?.home || portalHomes[portalId] || road.home;
     if (appTitle && home) appTitle.href = home;
     if (routeTitle) routeTitle.textContent = pageTitle;
+    initEditorPreview({
+        routeId,
+        routeName: road.name || routeId.toUpperCase(),
+        kpSystems,
+        directionLabels,
+        getCurrentKp: () => ({
+            kp: Number(kpInput.value),
+            kpSystemId: kpSystemInput.value || kpSystems[0]?.id || "route"
+        }),
+        onRecordsChange: (records, hiddenTypes) => {
+            userLayerRecords = records;
+            hiddenUserLayerTypes = hiddenTypes;
+            render();
+        }
+    });
     const coverage = {
         up: buildCoverage("up"),
         down: buildCoverage("down")
@@ -119,6 +157,31 @@ async function main() {
             STATE.baseScale *
             STATE.fitFactor *
             STATE.zoom;
+    }
+
+    function applyInitialFitZoom() {
+        const routeLength = STATE.viewEnd - STATE.viewStart;
+        if (!(routeLength > 0)) return;
+
+        // スマホのSVGは800pxのviewBoxを画面幅へ縮小表示するため、その比率も含めて
+        // 「実際に画面上で見える高さ」から初期倍率を逆算する。
+        const renderedWidth = STATE.isMobile
+            ? Math.max(1, window.innerWidth - 16)
+            : LAYOUT.width;
+        const renderRatio = Math.min(1, renderedWidth / LAYOUT.width);
+        const reservedHeight = STATE.isMobile ? 190 : 110;
+        const targetRenderedHeight = Math.max(320, window.innerHeight - reservedHeight);
+        const terminalHeight = road.terminal_unopened && STATE.viewStart <= 0
+            ? Number(road.terminal_unopened.display_height || 76)
+            : 0;
+        const fixedInternalHeight = LAYOUT.marginTop + LAYOUT.marginBottom + terminalHeight;
+        const routeInternalHeightAtZoom1 = routeLength * STATE.baseScale * STATE.fitFactor;
+        const fitZoom = (targetRenderedHeight / renderRatio - fixedInternalHeight)
+            / routeInternalHeightAtZoom1;
+
+        // 長距離路線は従来どおり1倍。短距離路線だけ、収まる範囲で拡大する。
+        const roundedDown = Math.floor(fitZoom * 10) / 10;
+        STATE.zoom = Math.max(1, Math.min(maxManualZoom, roundedDown));
     }
 
     async function updateKPUI(kp, lane) {
@@ -191,7 +254,8 @@ async function main() {
 
     function render() {
         container.innerHTML = "";
-        const svg = createExpresswaySvg({
+        const renderer = useV2Renderer ? createExpresswaySvgV2 : createExpresswaySvg;
+        const svg = renderer({
             ...viewRoad,
             structures: visibleStructures(),
             selectedStructure: STATE.selectedStructure,
@@ -200,6 +264,16 @@ async function main() {
         }, handleClick);
         container.appendChild(svg);
         fitSvgLabels(svg);
+        addRampPreviewLinks(svg, routeId);
+        renderEditorRecords(svg, userLayerRecords, {
+            hiddenTypes: hiddenUserLayerTypes,
+            toRouteKp: (kp, kpSystemId) => inputToRouteKpForSystem(kp, kpSystemById(kpSystemId) || kpSystems[0]),
+            onSelect: (record, routeKp) => handleKpSelect(
+                routeKp,
+                record.direction === "both" ? directionInput.value : record.direction,
+                record.name
+            )
+        });
     }
 
     function buildCoverage(direction) {
@@ -266,6 +340,7 @@ async function main() {
 
     function clearSelection() {
         STATE.selectedKp = null;
+        STATE.selectedDisplayKp = null;
         STATE.selectedDirection = null;
         STATE.selectedStructure = null;
         kpUI.hidden = true;
@@ -307,6 +382,8 @@ async function main() {
 
         selectKpSystemForRouteKp(kp);
         STATE.selectedKp = kp;
+        const localKp = routeToInputKp(kp);
+        STATE.selectedDisplayKp = Number.isFinite(localKp) ? localKp : kp;
         STATE.selectedDirection = direction;
         const requestedStructure = options.structure
             || (options.selectStructureAtKp ? structureAtKp(kp, direction) : null);
@@ -1002,9 +1079,9 @@ async function main() {
             document.body.classList.add("mini-map-resizing");
 
             const resize = moveEvent => {
-                const maxWidth = Math.max(minWidth, window.innerWidth - 20);
+                const maxWidth = Math.max(minWidth, window.innerWidth - rect.left - 10);
                 const maxHeight = Math.max(minHeight, window.innerHeight - rect.top - 10);
-                const width = Math.max(minWidth, Math.min(maxWidth, startWidth + startX - moveEvent.clientX));
+                const width = Math.max(minWidth, Math.min(maxWidth, startWidth + moveEvent.clientX - startX));
                 const height = Math.max(minHeight, Math.min(maxHeight, startHeight + moveEvent.clientY - startY));
 
                 miniMapEl.style.width = `${Math.round(width)}px`;
@@ -1029,12 +1106,15 @@ async function main() {
     }
 
     updateScale();
+    applyInitialFitZoom();
+    updateScale();
     updateKpInputBounds();
     render();
 
     window.addEventListener("resize", () => {
         const prev = STATE.isMobile;
         updateScale();
+        positionDesktopMiniMap();
 
         if (prev !== STATE.isMobile || STATE.isMobile) {
             render();
@@ -1051,9 +1131,6 @@ async function main() {
 
     const zoomControls = document.createElement("div");
     zoomControls.id = "zoom-controls";
-    const minManualZoom = 0.2;
-    const maxManualZoom = 8;
-
     const slider = document.createElement("input");
 
     slider.type = "range";
