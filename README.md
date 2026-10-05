@@ -169,7 +169,7 @@ migrations/          共有追加情報用D1スキーマ
 
 ## 11. 技術資料
 
-- [データモデル](data-model/README.md)
+- [データモデルと移行方針](docs/data-model.md)
 - [路線・KP検索API](docs/route-search-api.md)
 - [ICランプ詳細の実装](docs/ic-ramp-pages.md)
 - [追加地点・区間の保存と共有](docs/user-annotations.md)
