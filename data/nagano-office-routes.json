@@ -1,0 +1,18 @@
+[
+    {
+        "id": "e18",
+        "name": "E18 松井田妙義IC〜信濃町IC",
+        "company": "長野管理事務所管内",
+        "color": "#009944",
+        "scope": "nagano-office",
+        "portal": "nagano-office"
+    },
+    {
+        "id": "e19",
+        "name": "E19 安曇野IC〜更埴JCT",
+        "company": "長野管理事務所管内",
+        "color": "#009944",
+        "scope": "nagano-office",
+        "portal": "nagano-office"
+    }
+]

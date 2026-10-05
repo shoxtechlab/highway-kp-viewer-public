@@ -1,0 +1,67 @@
+{
+  "formatVersion": 1,
+  "facilities": [
+    { "id": "e18.fujioka-jct", "routeId": "e18", "name": "藤岡JCT" },
+    { "id": "e18.matsuida-myogi-ic", "routeId": "e18", "name": "松井田妙義IC" },
+    { "id": "e18.shinanomachi-ic", "routeId": "e18", "name": "信濃町IC" },
+    { "id": "e19.azumino-ic", "routeId": "e19", "name": "安曇野IC" },
+    { "id": "e19.koshoku-jct", "routeId": "e19", "name": "更埴JCT" },
+
+    { "id": "e17.nerima-ic", "routeId": "e17", "name": "練馬IC" },
+    { "id": "e17.honjo-kodama-ic", "routeId": "e17", "name": "本庄児玉IC" },
+    { "id": "e17.tsukiyono-ic", "routeId": "e17", "name": "月夜野IC" },
+    { "id": "e17.ojiya-ic", "routeId": "e17", "name": "小千谷IC" },
+
+    { "id": "e50.takasaki-jct", "routeId": "e50", "section": "west", "name": "高崎JCT" },
+    { "id": "e50.ota-kiryu-ic", "routeId": "e50", "section": "west", "name": "太田桐生IC" },
+    { "id": "e50.sakuragawa-chikusei-ic", "routeId": "e50", "section": "east-kitakanto", "name": "桜川筑西IC" },
+    { "id": "e50.hitachinaka-ic", "routeId": "e50", "section": "higashi-mito", "name": "ひたちなかIC" },
+
+    { "id": "e4.kawaguchi-jct", "routeId": "e4", "name": "川口JCT" },
+    { "id": "e4.sano-fujioka-ic", "routeId": "e4", "name": "佐野藤岡IC" },
+    { "id": "e4.shirakawa-ic", "routeId": "e4", "name": "白河IC" },
+    { "id": "e4.motomiya-ic", "routeId": "e4", "name": "本宮IC" },
+    { "id": "e4.shiroishi-ic", "routeId": "e4", "name": "白石IC" },
+
+    { "id": "e6.misato-ic", "routeId": "e6", "section": "joban", "name": "三郷IC" },
+    { "id": "e6.iwama-ic", "routeId": "e6", "section": "joban", "name": "岩間IC" },
+    { "id": "e6.iwaki-nakoso-ic", "routeId": "e6", "section": "joban", "name": "いわき勿来IC" },
+    { "id": "e51.hokota-ic", "routeId": "e51", "section": "east", "name": "鉾田IC" },
+    { "id": "e51.ibaraki-machi-jct", "routeId": "e51", "section": "east", "name": "茨城町JCT" },
+
+    { "id": "c3.oizumi-ic-jct", "routeId": "c3", "name": "大泉IC/JCT" },
+    { "id": "c3.koya-jct", "routeId": "c3", "name": "高谷JCT" },
+    { "id": "c4.fujisawa-ic", "routeId": "c4", "section": "shin-shonan", "name": "藤沢IC" },
+    { "id": "c4.sagamihara-ic", "routeId": "c4", "section": "keno-west", "name": "相模原IC" },
+    { "id": "c4.akiruno-ic", "routeId": "c4", "section": "keno-west", "name": "あきる野IC" },
+    { "id": "c4.kawajima-ic", "routeId": "c4", "section": "keno-west", "name": "川島IC" },
+    { "id": "c4.joso-ic", "routeId": "c4", "section": "keno-west", "name": "常総IC" },
+    { "id": "c4.kozaki-ic", "routeId": "c4", "section": "keno-west", "name": "神崎IC" },
+
+    { "id": "e1.tokyo-ic", "routeId": "e1", "name": "東京IC" },
+    { "id": "e1.atsugi-ic", "routeId": "e1", "name": "厚木IC" },
+    { "id": "e1.oi-matsuda-ic", "routeId": "e1", "name": "大井松田IC" },
+    { "id": "e1.numazu-ic", "routeId": "e1", "name": "沼津IC" },
+    { "id": "e1.shimizu-ic", "routeId": "e1", "name": "清水IC" },
+    { "id": "e1.hamamatsu-ic", "routeId": "e1", "name": "浜松IC" },
+    { "id": "e1.toyokawa-ic", "routeId": "e1", "name": "豊川IC" },
+
+    { "id": "e1a.ebina-minami-jct", "routeId": "e1a", "section": "east", "name": "海老名南JCT" },
+    { "id": "e1a.atsugi-minami-ic", "routeId": "e1a", "section": "east", "name": "厚木南IC" },
+    { "id": "e1a.shin-gotemba-ic", "routeId": "e1a", "section": "west", "name": "新御殿場IC" },
+    { "id": "e1a.nagaizumi-numazu-ic", "routeId": "e1a", "section": "west", "name": "長泉沼津IC" },
+    { "id": "e1a.shin-shizuoka-ic", "routeId": "e1a", "section": "west", "name": "新静岡IC" },
+    { "id": "e1a.shinshiro-ic", "routeId": "e1a", "section": "west", "name": "新城IC" },
+
+    { "id": "e28.kobe-nishi-ic", "routeId": "e28", "name": "神戸西IC" },
+    { "id": "e28.tsuna-ichinomiya-ic", "routeId": "e28", "name": "津名一宮IC" },
+    { "id": "e28.naruto-ic", "routeId": "e28", "name": "鳴門IC" },
+    { "id": "e30.hayashima-ic", "routeId": "e30", "name": "早島IC" },
+    { "id": "e30.kojima-ic", "routeId": "e30", "name": "児島IC" },
+    { "id": "e30.sakaide-ic", "routeId": "e30", "name": "坂出IC" },
+    { "id": "e76.nishiseto-onomichi-ic", "routeId": "e76", "name": "西瀬戸尾道IC" },
+    { "id": "e76.ikuchijima-minami-ic", "routeId": "e76", "name": "生口島南IC" },
+    { "id": "e76.omishima-ic", "routeId": "e76", "name": "大三島IC" },
+    { "id": "e76.imabari-ic", "routeId": "e76", "name": "今治IC" }
+  ]
+}

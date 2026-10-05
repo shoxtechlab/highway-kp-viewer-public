@@ -1,0 +1,23 @@
+[
+    {
+        "id": "e28",
+        "name": "E28 神戸淡路鳴門自動車道",
+        "company": "本州四国連絡高速道路",
+        "color": "#00A0E9",
+        "portal": "honshi"
+    },
+    {
+        "id": "e30",
+        "name": "E30 瀬戸中央自動車道",
+        "company": "本州四国連絡高速道路",
+        "color": "#00A0E9",
+        "portal": "honshi"
+    },
+    {
+        "id": "e76",
+        "name": "E76 西瀬戸自動車道",
+        "company": "本州四国連絡高速道路",
+        "color": "#00A0E9",
+        "portal": "honshi"
+    }
+]

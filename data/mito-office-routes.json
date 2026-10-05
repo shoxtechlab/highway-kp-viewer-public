@@ -1,0 +1,5 @@
+[
+  { "id": "e6", "name": "E6 岩間IC〜いわき勿来IC", "company": "水戸管理事務所管内", "color": "#009944", "scope": "mito-office", "portal": "mito-office" },
+  { "id": "e50", "name": "E50 桜川筑西IC〜水戸南IC／東水戸道路", "company": "水戸管理事務所管内", "color": "#009944", "scope": "mito-office", "portal": "mito-office" },
+  { "id": "e51", "name": "E51 鉾田IC〜茨城町JCT", "company": "水戸管理事務所管内", "color": "#009944", "scope": "mito-office", "portal": "mito-office" }
+]

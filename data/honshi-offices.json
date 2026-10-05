@@ -1,0 +1,37 @@
+[
+    {
+        "id": "honshi-kobe-office",
+        "name": "神戸管理センター（神戸西IC〜津名一宮IC）",
+        "route": "e28",
+        "scope": "honshi-kobe-office",
+        "portal": "honshi"
+    },
+    {
+        "id": "honshi-naruto-office",
+        "name": "鳴門管理センター（津名一宮IC〜鳴門IC）",
+        "route": "e28",
+        "scope": "honshi-naruto-office",
+        "portal": "honshi"
+    },
+    {
+        "id": "honshi-sakaide-office",
+        "name": "坂出管理センター（早島IC〜坂出IC）",
+        "route": "e30",
+        "scope": "honshi-sakaide-office",
+        "portal": "honshi"
+    },
+    {
+        "id": "honshi-shimanami-onomichi-office",
+        "name": "しまなみ尾道管理センター（西瀬戸尾道IC〜生口島南IC）",
+        "route": "e76",
+        "scope": "honshi-shimanami-onomichi-office",
+        "portal": "honshi"
+    },
+    {
+        "id": "honshi-shimanami-imabari-office",
+        "name": "しまなみ今治管理センター（生口島南IC〜今治IC）",
+        "route": "e76",
+        "scope": "honshi-shimanami-imabari-office",
+        "portal": "honshi"
+    }
+]

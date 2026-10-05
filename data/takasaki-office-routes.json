@@ -1,0 +1,26 @@
+[
+    {
+        "id": "e17",
+        "name": "E17 本庄児玉IC〜月夜野IC",
+        "company": "高崎管理事務所管内",
+        "color": "#009944",
+        "scope": "takasaki-office",
+        "portal": "takasaki-office"
+    },
+    {
+        "id": "e18",
+        "name": "E18 藤岡JCT〜松井田妙義IC",
+        "company": "高崎管理事務所管内",
+        "color": "#009944",
+        "scope": "takasaki-office",
+        "portal": "takasaki-office"
+    },
+    {
+        "id": "e50",
+        "name": "E50 高崎JCT〜太田桐生IC",
+        "company": "高崎管理事務所管内",
+        "color": "#009944",
+        "scope": "takasaki-office",
+        "portal": "takasaki-office"
+    }
+]

@@ -1,0 +1,386 @@
+{
+  "nagano-office": {
+    "name": "長野管理事務所管内",
+    "home": "nagano-office/",
+    "routes": {
+      "e18": {
+        "start": 37.5,
+        "end": 167.2,
+        "startName": "松井田妙義IC",
+        "endName": "信濃町IC"
+      },
+      "e19": {
+        "start": 33,
+        "end": 75.7,
+        "startName": "安曇野IC",
+        "endName": "更埴JCT"
+      }
+    }
+  },
+  "takasaki-office": {
+    "name": "高崎管理事務所管内",
+    "home": "takasaki-office/",
+    "routes": {
+      "e17": {
+        "start": 69.7,
+        "end": 131.2,
+        "startName": "本庄児玉IC",
+        "endName": "月夜野IC"
+      },
+      "e18": {
+        "start": 0,
+        "end": 37.5,
+        "startName": "藤岡JCT",
+        "endName": "松井田妙義IC"
+      },
+      "e50": {
+        "start": {
+          "section": "west",
+          "kp": 0
+        },
+        "end": {
+          "section": "west",
+          "kp": 30.4
+        },
+        "startName": "高崎JCT",
+        "endName": "太田桐生IC"
+      }
+    }
+  },
+  "utsunomiya-office": {
+    "name": "宇都宮管理事務所管内",
+    "home": "utsunomiya-office/",
+    "routes": {
+      "e4": {
+        "start": 55,
+        "end": 169.7,
+        "startName": "佐野藤岡IC",
+        "endName": "白河IC"
+      },
+      "e50": {
+        "start": {
+          "section": "west",
+          "kp": 30.4
+        },
+        "end": {
+          "section": "east-kitakanto",
+          "kp": 140.76
+        },
+        "startName": "太田桐生IC",
+        "endName": "桜川筑西IC"
+      }
+    }
+  },
+  "mito-office": {
+    "name": "水戸管理事務所管内",
+    "home": "mito-office/",
+    "routes": {
+      "e6": {
+        "start": {
+          "section": "joban",
+          "kp": 69.1
+        },
+        "end": {
+          "section": "joban",
+          "kp": 154.5
+        },
+        "startName": "岩間IC",
+        "endName": "いわき勿来IC"
+      },
+      "e50": {
+        "start": {
+          "section": "east-kitakanto",
+          "kp": 140.76
+        },
+        "end": {
+          "section": "higashi-mito",
+          "kp": 190.63675959981174
+        },
+        "startName": "桜川筑西IC",
+        "endName": "ひたちなかIC"
+      },
+      "e51": {
+        "start": {
+          "section": "east",
+          "kp": 105.4
+        },
+        "end": {
+          "section": "east",
+          "kp": 123
+        },
+        "startName": "鉾田IC",
+        "endName": "茨城町JCT"
+      }
+    }
+  },
+  "misato-office": {
+    "name": "三郷管理事務所管内",
+    "home": "misato-office/",
+    "routes": {
+      "c3": {
+        "start": 0,
+        "end": 49,
+        "startName": "大泉IC/JCT",
+        "endName": "高谷JCT"
+      }
+    }
+  },
+  "tokorozawa-office": {
+    "name": "所沢管理事務所管内",
+    "home": "tokorozawa-office/",
+    "routes": {
+      "e17": {
+        "start": 0,
+        "end": 69.7,
+        "startName": "練馬IC",
+        "endName": "本庄児玉IC"
+      },
+      "c4": {
+        "start": {
+          "section": "keno-west",
+          "kp": 47.8
+        },
+        "end": {
+          "section": "keno-west",
+          "kp": 86
+        },
+        "startName": "あきる野IC",
+        "endName": "川島IC"
+      }
+    }
+  },
+  "kazo-office": {
+    "name": "加須管理事務所管内",
+    "home": "kazo-office/",
+    "routes": {
+      "e4": {
+        "start": 0,
+        "end": 55,
+        "startName": "川口JCT",
+        "endName": "佐野藤岡IC"
+      },
+      "c4": {
+        "start": {
+          "section": "keno-west",
+          "kp": 86
+        },
+        "end": {
+          "section": "keno-west",
+          "kp": 143.4
+        },
+        "startName": "川島IC",
+        "endName": "常総IC"
+      }
+    }
+  },
+  "fukushima-office": {
+    "name": "福島管理事務所管内",
+    "home": "e-nexco/tohoku/fukushima-office/",
+    "routes": {
+      "e4": {
+        "start": 223.1,
+        "end": 299.5,
+        "startName": "本宮IC",
+        "endName": "白石IC"
+      }
+    }
+  },
+  "yawara-office": {
+    "name": "谷和原管理事務所管内",
+    "home": "e-nexco/kanto/yawara-office/",
+    "routes": {
+      "e6": {
+        "start": {
+          "section": "joban",
+          "kp": 0
+        },
+        "end": {
+          "section": "joban",
+          "kp": 69.1
+        },
+        "startName": "三郷IC",
+        "endName": "岩間IC"
+      },
+      "c4": {
+        "start": {
+          "section": "keno-west",
+          "kp": 143.4
+        },
+        "end": {
+          "section": "keno-west",
+          "kp": 188.3
+        },
+        "startName": "常総IC",
+        "endName": "神崎IC"
+      }
+    }
+  },
+  "yuzawa-office": {
+    "name": "湯沢管理事務所管内",
+    "home": "e-nexco/niigata/yuzawa-office/",
+    "routes": {
+      "e17": {
+        "start": 131.2,
+        "end": 228.9,
+        "startName": "月夜野IC",
+        "endName": "小千谷IC"
+      }
+    }
+  },
+  "yokohama-office": {
+    "name": "横浜保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/yokohama-office/",
+    "routes": {
+      "e1": {
+        "start": 0,
+        "end": 35,
+        "startName": "東京IC",
+        "endName": "厚木IC"
+      },
+      "e1a": {
+        "start": {
+          "section": "east",
+          "kp": 0
+        },
+        "end": {
+          "section": "east",
+          "kp": 1.5
+        },
+        "startName": "海老名南JCT",
+        "endName": "厚木南IC"
+      },
+      "c4": {
+        "start": {
+          "section": "shin-shonan",
+          "kp": 3.4
+        },
+        "end": {
+          "section": "keno-west",
+          "kp": 30.3
+        },
+        "startName": "藤沢IC",
+        "endName": "相模原IC"
+      }
+    }
+  },
+  "gotemba-office": {
+    "name": "御殿場保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/gotemba-office/",
+    "routes": {
+      "e1": {
+        "start": 57.9,
+        "end": 103.3,
+        "startName": "大井松田IC",
+        "endName": "沼津IC"
+      },
+      "e1a": {
+        "start": {
+          "section": "west",
+          "kp": 46.6
+        },
+        "end": {
+          "section": "west",
+          "kp": 66.5
+        },
+        "startName": "新御殿場IC",
+        "endName": "長泉沼津IC"
+      }
+    }
+  },
+  "shizuoka-office": {
+    "name": "静岡保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/shizuoka-office/",
+    "routes": {
+      "e1": {
+        "start": 147.8,
+        "end": 230,
+        "startName": "清水IC",
+        "endName": "浜松IC"
+      }
+    }
+  },
+  "hamamatsu-office": {
+    "name": "浜松保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/hamamatsu-office/",
+    "routes": {
+      "e1": {
+        "start": 230,
+        "end": 269,
+        "startName": "浜松IC",
+        "endName": "豊川IC"
+      },
+      "e1a": {
+        "start": {
+          "section": "west",
+          "kp": 119.8
+        },
+        "end": {
+          "section": "west",
+          "kp": 210.3
+        },
+        "startName": "新静岡IC",
+        "endName": "新城IC"
+      }
+    }
+  },
+  "honshi-kobe-office": {
+    "name": "神戸管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e28": {
+        "start": 0,
+        "end": 44.4,
+        "startName": "神戸西IC",
+        "endName": "津名一宮IC"
+      }
+    }
+  },
+  "honshi-naruto-office": {
+    "name": "鳴門管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e28": {
+        "start": 44.4,
+        "end": 89,
+        "startName": "津名一宮IC",
+        "endName": "鳴門IC"
+      }
+    }
+  },
+  "honshi-sakaide-office": {
+    "name": "坂出管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e30": {
+        "start": 0,
+        "end": 37.3,
+        "startName": "早島IC",
+        "endName": "坂出IC"
+      }
+    }
+  },
+  "honshi-shimanami-onomichi-office": {
+    "name": "しまなみ尾道管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e76": {
+        "start": 0,
+        "end": 24.5,
+        "startName": "西瀬戸尾道IC",
+        "endName": "生口島南IC"
+      }
+    }
+  },
+  "honshi-shimanami-imabari-office": {
+    "name": "しまなみ今治管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e76": {
+        "start": 24.5,
+        "end": 59.2,
+        "startName": "生口島南IC",
+        "endName": "今治IC"
+      }
+    }
+  }
+}

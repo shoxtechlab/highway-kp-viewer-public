@@ -1,0 +1,256 @@
+[
+    {
+        "id": "c3",
+        "name": "C3 東京外環自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "線形・施設収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "c4",
+        "name": "C4 首都圏中央連絡自動車道",
+        "company": "NEXCO中日本・NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e1",
+        "name": "E1 東名高速道路",
+        "company": "NEXCO中日本",
+        "color": "#f58220",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e1-meishin",
+        "name": "E1 名神高速道路",
+        "company": "NEXCO中日本・NEXCO西日本",
+        "color": "#f58220",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e1a",
+        "name": "E1A 新東名高速道路",
+        "company": "NEXCO中日本",
+        "color": "#f58220",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e1a-ise-wangan",
+        "name": "E1A 伊勢湾岸自動車道",
+        "company": "NEXCO中日本",
+        "color": "#f58220",
+        "portal": "national",
+        "available": true,
+        "status": "線形・施設収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e1a-shin-meishin",
+        "name": "E1A 新名神高速道路",
+        "company": "NEXCO中日本・NEXCO西日本",
+        "color": "#f58220",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み（未開通区間あり）"
+    },
+    {
+        "id": "e2-sanyo",
+        "name": "E2 山陽自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e2a-chugoku",
+        "name": "E2A 中国自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e3",
+        "name": "E3 九州自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e10-miyazaki",
+        "name": "E10 宮崎自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e16",
+        "name": "E16 横浜横須賀道路",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e23-higashi-meihan",
+        "name": "E23 東名阪自動車道",
+        "company": "NEXCO中日本",
+        "color": "#f58220",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e25-nishi-meihan",
+        "name": "E25 西名阪自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e34-nagasaki",
+        "name": "E34 長崎自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e73-okayama",
+        "name": "E73 岡山自動車道",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e82",
+        "name": "E82 千葉東金道路",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e83",
+        "name": "E83 第三京浜道路",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e89-daini-keihan",
+        "name": "E89 第二京阪道路",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "線形収録済み（要キャリブレーション）"
+    },
+    {
+        "id": "e4",
+        "name": "E4 東北自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national"
+    },
+    {
+        "id": "e6",
+        "name": "E6 常磐自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national"
+    },
+    {
+        "id": "e17",
+        "name": "E17 関越自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national"
+    },
+    {
+        "id": "e18",
+        "name": "E18 上信越自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national"
+    },
+    {
+        "id": "e19",
+        "name": "E19 長野自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national"
+    },
+    {
+        "id": "e28",
+        "name": "E28 神戸淡路鳴門自動車道",
+        "company": "本州四国連絡高速道路",
+        "color": "#00A0E9",
+        "portal": "national"
+    },
+    {
+        "id": "e30",
+        "name": "E30 瀬戸中央自動車道",
+        "company": "本州四国連絡高速道路",
+        "color": "#00A0E9",
+        "portal": "national"
+    },
+    {
+        "id": "e50",
+        "name": "E50 北関東自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e51",
+        "name": "E51 東関東自動車道",
+        "company": "NEXCO東日本",
+        "color": "#009944",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    },
+    {
+        "id": "e76",
+        "name": "E76 西瀬戸自動車道",
+        "company": "本州四国連絡高速道路",
+        "color": "#00A0E9",
+        "portal": "national"
+    },
+    {
+        "id": "e93-daini-shinmei",
+        "name": "E93 第二神明道路",
+        "company": "NEXCO西日本",
+        "color": "#0068b7",
+        "portal": "national",
+        "available": true,
+        "status": "KP座標収録済み"
+    }
+]

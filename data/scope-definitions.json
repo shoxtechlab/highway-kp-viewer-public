@@ -1,0 +1,244 @@
+{
+  "nagano-office": {
+    "name": "長野管理事務所管内",
+    "home": "nagano-office/",
+    "routes": {
+      "e18": {
+        "fromFacilityId": "e18.matsuida-myogi-ic",
+        "toFacilityId": "e18.shinanomachi-ic"
+      },
+      "e19": {
+        "fromFacilityId": "e19.azumino-ic",
+        "toFacilityId": "e19.koshoku-jct"
+      }
+    }
+  },
+  "takasaki-office": {
+    "name": "高崎管理事務所管内",
+    "home": "takasaki-office/",
+    "routes": {
+      "e17": {
+        "fromFacilityId": "e17.honjo-kodama-ic",
+        "toFacilityId": "e17.tsukiyono-ic"
+      },
+      "e18": {
+        "fromFacilityId": "e18.fujioka-jct",
+        "toFacilityId": "e18.matsuida-myogi-ic"
+      },
+      "e50": {
+        "fromFacilityId": "e50.takasaki-jct",
+        "toFacilityId": "e50.ota-kiryu-ic"
+      }
+    }
+  },
+  "utsunomiya-office": {
+    "name": "宇都宮管理事務所管内",
+    "home": "utsunomiya-office/",
+    "routes": {
+      "e4": {
+        "fromFacilityId": "e4.sano-fujioka-ic",
+        "toFacilityId": "e4.shirakawa-ic"
+      },
+      "e50": {
+        "fromFacilityId": "e50.ota-kiryu-ic",
+        "toFacilityId": "e50.sakuragawa-chikusei-ic"
+      }
+    }
+  },
+  "mito-office": {
+    "name": "水戸管理事務所管内",
+    "home": "mito-office/",
+    "routes": {
+      "e6": {
+        "fromFacilityId": "e6.iwama-ic",
+        "toFacilityId": "e6.iwaki-nakoso-ic"
+      },
+      "e50": {
+        "fromFacilityId": "e50.sakuragawa-chikusei-ic",
+        "toFacilityId": "e50.hitachinaka-ic"
+      },
+      "e51": {
+        "fromFacilityId": "e51.hokota-ic",
+        "toFacilityId": "e51.ibaraki-machi-jct"
+      }
+    }
+  },
+  "misato-office": {
+    "name": "三郷管理事務所管内",
+    "home": "misato-office/",
+    "routes": {
+      "c3": {
+        "fromFacilityId": "c3.oizumi-ic-jct",
+        "toFacilityId": "c3.koya-jct"
+      }
+    }
+  },
+  "tokorozawa-office": {
+    "name": "所沢管理事務所管内",
+    "home": "tokorozawa-office/",
+    "routes": {
+      "e17": {
+        "fromFacilityId": "e17.nerima-ic",
+        "toFacilityId": "e17.honjo-kodama-ic"
+      },
+      "c4": {
+        "fromFacilityId": "c4.akiruno-ic",
+        "toFacilityId": "c4.kawajima-ic"
+      }
+    }
+  },
+  "kazo-office": {
+    "name": "加須管理事務所管内",
+    "home": "kazo-office/",
+    "routes": {
+      "e4": {
+        "fromFacilityId": "e4.kawaguchi-jct",
+        "toFacilityId": "e4.sano-fujioka-ic"
+      },
+      "c4": {
+        "fromFacilityId": "c4.kawajima-ic",
+        "toFacilityId": "c4.joso-ic"
+      }
+    }
+  },
+  "fukushima-office": {
+    "name": "福島管理事務所管内",
+    "home": "e-nexco/tohoku/fukushima-office/",
+    "routes": {
+      "e4": {
+        "fromFacilityId": "e4.motomiya-ic",
+        "toFacilityId": "e4.shiroishi-ic"
+      }
+    }
+  },
+  "yawara-office": {
+    "name": "谷和原管理事務所管内",
+    "home": "e-nexco/kanto/yawara-office/",
+    "routes": {
+      "e6": {
+        "fromFacilityId": "e6.misato-ic",
+        "toFacilityId": "e6.iwama-ic"
+      },
+      "c4": {
+        "fromFacilityId": "c4.joso-ic",
+        "toFacilityId": "c4.kozaki-ic"
+      }
+    }
+  },
+  "yuzawa-office": {
+    "name": "湯沢管理事務所管内",
+    "home": "e-nexco/niigata/yuzawa-office/",
+    "routes": {
+      "e17": {
+        "fromFacilityId": "e17.tsukiyono-ic",
+        "toFacilityId": "e17.ojiya-ic"
+      }
+    }
+  },
+  "yokohama-office": {
+    "name": "横浜保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/yokohama-office/",
+    "routes": {
+      "e1": {
+        "fromFacilityId": "e1.tokyo-ic",
+        "toFacilityId": "e1.atsugi-ic"
+      },
+      "e1a": {
+        "fromFacilityId": "e1a.ebina-minami-jct",
+        "toFacilityId": "e1a.atsugi-minami-ic"
+      },
+      "c4": {
+        "fromFacilityId": "c4.fujisawa-ic",
+        "toFacilityId": "c4.sagamihara-ic"
+      }
+    }
+  },
+  "gotemba-office": {
+    "name": "御殿場保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/gotemba-office/",
+    "routes": {
+      "e1": {
+        "fromFacilityId": "e1.oi-matsuda-ic",
+        "toFacilityId": "e1.numazu-ic"
+      },
+      "e1a": {
+        "fromFacilityId": "e1a.shin-gotemba-ic",
+        "toFacilityId": "e1a.nagaizumi-numazu-ic"
+      }
+    }
+  },
+  "shizuoka-office": {
+    "name": "静岡保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/shizuoka-office/",
+    "routes": {
+      "e1": {
+        "fromFacilityId": "e1.shimizu-ic",
+        "toFacilityId": "e1.hamamatsu-ic"
+      }
+    }
+  },
+  "hamamatsu-office": {
+    "name": "浜松保全・サービスセンター管内",
+    "home": "c-nexco/tokyo/hamamatsu-office/",
+    "routes": {
+      "e1": {
+        "fromFacilityId": "e1.hamamatsu-ic",
+        "toFacilityId": "e1.toyokawa-ic"
+      },
+      "e1a": {
+        "fromFacilityId": "e1a.shin-shizuoka-ic",
+        "toFacilityId": "e1a.shinshiro-ic"
+      }
+    }
+  },
+  "honshi-kobe-office": {
+    "name": "神戸管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e28": {
+        "fromFacilityId": "e28.kobe-nishi-ic",
+        "toFacilityId": "e28.tsuna-ichinomiya-ic"
+      }
+    }
+  },
+  "honshi-naruto-office": {
+    "name": "鳴門管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e28": {
+        "fromFacilityId": "e28.tsuna-ichinomiya-ic",
+        "toFacilityId": "e28.naruto-ic"
+      }
+    }
+  },
+  "honshi-sakaide-office": {
+    "name": "坂出管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e30": {
+        "fromFacilityId": "e30.hayashima-ic",
+        "toFacilityId": "e30.sakaide-ic"
+      }
+    }
+  },
+  "honshi-shimanami-onomichi-office": {
+    "name": "しまなみ尾道管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e76": {
+        "fromFacilityId": "e76.nishiseto-onomichi-ic",
+        "toFacilityId": "e76.omishima-ic"
+      }
+    }
+  },
+  "honshi-shimanami-imabari-office": {
+    "name": "しまなみ今治管理センター管内",
+    "home": "honshi/",
+    "routes": {
+      "e76": {
+        "fromFacilityId": "e76.omishima-ic",
+        "toFacilityId": "e76.imabari-ic"
+      }
+    }
+  }
+}

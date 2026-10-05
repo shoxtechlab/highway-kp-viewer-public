@@ -1,0 +1,132 @@
+# ユーザー編集地点・区間 — 基礎データを壊さず情報を重ねる
+
+ユーザー編集地点機能は、路線図へ一時的な地点や区間を追加する機能です。事故・工事・電気室・バスストップなど、基礎の路線データとは別に管理したい情報を表示できます。
+
+![E28の編集モード。地点・区間、KP、方向、種類などを入力](e28-annotation-editor-light-pc.jpg)
+
+橋梁・トンネル・ICなどの恒久データは、精査した `road.json` 由来の基礎レイヤーです。ユーザーが足す情報は別レイヤーへ保存するため、試験的な設備、期間限定の工事、個人用メモを追加しても基礎データを変更しません。
+
+```text
+基礎レイヤー: IC / JCT / SA・PA / 橋梁 / トンネル
+追加レイヤー: 工事 / 事故・事象 / 電気室 / BS / その他の地点・区間
+```
+
+## 編集モードの開き方
+
+1. 路線ページ右上のケバブメニュー（`⋮`）を開きます。
+2. 編集モードを有効にします。
+3. 地点または区間、KP、方向、種別、名称、色、表示期限、公開範囲を入力します。
+4. 追加したラベルをタップすると、既存施設と同じように該当KPへ移動します。
+
+地点を選んだ場合は始点KPだけを使います。区間を選んだ場合は始点KPと終点KPを使います。追加項目は既存の施設・橋梁・トンネルと区別できる表示になり、ケバブメニューから種別ごとに表示・非表示を切り替えられます。
+
+![44.8KPへ追加した工事デモ。既存データと区別できるラベルで表示](e28-annotation-result-light-pc.jpg)
+
+## 追加できる情報
+
+| 分類 | 例 |
+| --- | --- |
+| 形状 | 1地点、KP間の区間 |
+| 方向 | 上りのみ、下りのみ、上下両方 |
+| 種別 | SA、PA、IC、JCT、トンネル、橋梁、BS、電気室、事象、工事、その他 |
+| 表示 | 名称、説明、メイン色、サブ色 |
+| 期限 | 無期限、1日、3日、7日、30日 |
+| 保存先 | 自分のみ、全員向け |
+
+## 2種類の保存先
+
+### 自分のみ
+
+- ブラウザのIndexedDBへ保存します。
+- サーバーには送信されません。
+- 同じ端末・同じブラウザ・同じサイトで利用できます。
+- 全国版、本四版、管理事務所版など入口が違っても、同じ路線IDの表示には同じデータが現れます。
+- ブラウザデータの削除、プライベートブラウズ、端末変更、別ブラウザでは引き継がれません。
+
+### 全員向け
+
+- Cloudflare D1へ保存し、同じ路線を開いた利用者へ配信します。
+- 閲覧に認証は不要です。
+- 追加・変更・削除には管理者キーが必要です。
+- 管理者キーは操作時のダイアログで入力し、公開ソースや保存データには含めません。
+- 同じ項目を複数端末から編集した場合は、バージョン番号を使って競合を検出し、古い内容による上書きを拒否します。
+
+```mermaid
+sequenceDiagram
+  participant A as 端末A
+  participant B as 端末B
+  participant API as 共有API / D1
+  A->>API: version=3 を読み込み
+  B->>API: version=3 を読み込み
+  A->>API: version=3として更新
+  API-->>A: 更新成功、version=4
+  B->>API: 古いversion=3として更新
+  API-->>B: 409 Conflict、再読み込みを要求
+```
+
+中核実装: [`server/annotation-service.js`](../server/annotation-service.js)
+
+```js
+const result = await db.prepare(`
+  UPDATE annotations
+  SET payload = ?, version = version + 1, updated_at = ?, expires_at = ?
+  WHERE route_id = ? AND id = ? AND version = ?
+`).bind(JSON.stringify(record), now, record.expiresAt, routeId, id, version).run();
+
+if (!result.meta?.changes) {
+  throw apiError(409, "別の端末で更新されています。共有データを再読み込みしてください。");
+}
+```
+
+## 表示期限
+
+初期値は「無期限」です。1日・3日・7日・30日などを選んだ項目には有効期限を保存し、期限を過ぎた共有項目はAPIの一覧から除外します。
+
+## API概要
+
+共有項目は次のAPIで扱います。
+
+```text
+GET    /api/annotations?route=e28
+POST   /api/annotations
+PUT    /api/annotations/:id
+DELETE /api/annotations/:id?route=e28
+```
+
+`GET` は公開読み取りです。書き込み系リクエストは `Authorization: Bearer ...` または `X-Admin-Key` を受け取り、Cloudflareのシークレット `ANNOTATIONS_ADMIN_KEY` と照合します。実際のキーはリポジトリへコミットしません。
+
+## Cloudflare側の準備
+
+共有保存を有効にするには次の設定が必要です。
+
+1. D1データベースを作成します。
+2. Pages Functionsへ `ANNOTATIONS_DB` という名前でD1をバインドします。
+3. `migrations/0001_annotations.sql` を適用します。
+4. `ANNOTATIONS_ADMIN_KEY` を暗号化シークレットとして登録します。
+
+D1または管理者キーが未設定でも、端末内の「自分のみ」データは利用できます。共有操作は設定不足を示すエラーになります。
+
+## 実装ファイル
+
+| ファイル | 役割 |
+| --- | --- |
+| `js/editorPreview.js` | 編集UI、IndexedDB、共有API通信、描画データ生成 |
+| `css/editor-preview.css` | 編集パネルと追加ラベルの表示 |
+| `css/editor-item-actions.css` | 追加項目の操作UI |
+| `functions/api/annotations*.js` | Cloudflare Pages FunctionsのAPI入口 |
+| `server/annotation-service.js` | 入力検証、認証、D1読み書き、競合検出 |
+| `migrations/0001_annotations.sql` | D1テーブル定義 |
+
+## セキュリティ上の注意
+
+- 管理者キーをJavaScript、JSON、README、GitHub Actionsのログへ書かないでください。
+- 共有データは閲覧者全員へ返るため、個人情報・社内限定情報・秘密情報を登録しないでください。
+- この機能は信頼できる管理者による共有投稿を前提としており、不特定多数が自由投稿する掲示板機能ではありません。
+
+## この機能で示せること
+
+- 静的な路線図を、現場情報を重ねられる軽量な業務画面へ拡張できる
+- 個人メモは端末内、共有情報はD1と、同じUIで保存先を分けられる
+- 全国版・会社版・管理事務所版の入口が違っても、路線IDを軸に同じ追加情報を表示できる
+- 有効期限、種別フィルター、上下線別表示を使って、情報量が増えても整理できる
+- 楽観ロックにより、複数端末からの編集競合を検出できる

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>走行モード | KP Viewer</title>
+    <meta name="theme-color" content="#00973a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/drive.css">
+</head>
+<body>
+    <main id="drive-app">
+        <header class="drive-header">
+            <div>
+                <p id="drive-route-number">---</p>
+                <h1 id="drive-route-name">路線を確認中</h1>
+            </div>
+            <button id="drive-stop" type="button">走行終了</button>
+        </header>
+
+        <section class="drive-readout" aria-live="polite">
+            <div class="drive-direction" id="drive-direction">---</div>
+            <div class="drive-kp"><strong id="drive-kp">--.--</strong><span>KP</span></div>
+            <div class="drive-speed"><strong id="drive-speed">--</strong><span>km/h</span></div>
+        </section>
+
+        <section id="drive-road-view" aria-label="現在位置周辺の路線図">
+            <div class="drive-forward">進行方向</div>
+            <div class="drive-road-line"></div>
+            <div id="drive-items"></div>
+            <div class="drive-current-marker"><span></span><b>現在地</b></div>
+        </section>
+
+        <div id="drive-route-change" role="status" aria-live="polite" hidden></div>
+        <p id="drive-status" role="status" aria-live="polite">現在地を取得しています。</p>
+    </main>
+    <script type="module" src="js/drive.js"></script>
+</body>
+</html>

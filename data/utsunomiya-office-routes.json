@@ -1,0 +1,18 @@
+[
+  {
+    "id": "e4",
+    "name": "E4 佐野藤岡IC〜白河IC",
+    "company": "宇都宮管理事務所管内",
+    "color": "#009944",
+    "scope": "utsunomiya-office",
+    "portal": "utsunomiya-office"
+  },
+  {
+    "id": "e50",
+    "name": "E50 太田桐生IC〜岩舟JCT／栃木都賀JCT〜桜川筑西IC",
+    "company": "宇都宮管理事務所管内",
+    "color": "#009944",
+    "scope": "utsunomiya-office",
+    "portal": "utsunomiya-office"
+  }
+]
