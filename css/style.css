@@ -670,6 +670,45 @@ body.dark-theme {
 /* 位置未選択時は、空の地図枠だけを表示しない。Leaflet初期化後は子要素が入る。 */
 #mini-map:empty { display: none; }
 
+.mini-map-layer-switch {
+    display: flex;
+    overflow: hidden;
+    border: 1px solid rgba(42, 62, 51, 0.35) !important;
+    border-radius: 7px !important;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22);
+}
+
+.mini-map-layer-switch .mini-map-layer-button {
+    min-width: 40px;
+    height: 28px;
+    margin: 0;
+    padding: 0 7px;
+    border: 0;
+    border-right: 1px solid rgba(42, 62, 51, 0.22);
+    border-radius: 0;
+    background: transparent;
+    color: #244236;
+    font: 700 12px/28px "Noto Sans JP", sans-serif;
+    cursor: pointer;
+}
+
+.mini-map-layer-switch .mini-map-layer-button:last-child {
+    border-right: 0;
+}
+
+.mini-map-layer-switch .mini-map-layer-button.is-active {
+    background: #008f4c;
+    color: #fff;
+}
+
+.mini-map-layer-switch .mini-map-layer-button:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid #fff;
+    outline-offset: -3px;
+}
+
 .mini-map-resize-handle {
     position: absolute;
     right: 0;

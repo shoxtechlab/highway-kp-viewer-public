@@ -78,10 +78,30 @@ async function main() {
     }
 
     const miniMapEl = document.getElementById("mini-map");
+    const MINI_MAP_LAYER_STORAGE_KEY = "highway-kp-mini-map-layer";
     let miniMap = null;
     let miniMarker = null;
+    let miniMapLayers = null;
+    let miniMapLayerMode = loadMiniMapLayerMode();
+    let miniMapLayerButtons = [];
     let mobileMiniMapOpen = false;
     let lastMiniMapPosition = null;
+
+    function loadMiniMapLayerMode() {
+        try {
+            return localStorage.getItem(MINI_MAP_LAYER_STORAGE_KEY) === "photo" ? "photo" : "map";
+        } catch {
+            return "map";
+        }
+    }
+
+    function saveMiniMapLayerMode(mode) {
+        try {
+            localStorage.setItem(MINI_MAP_LAYER_STORAGE_KEY, mode);
+        } catch {
+            // プライベートブラウズ等で保存できなくても、現在の表示切替は継続する。
+        }
+    }
 
     // PC版v2のミニマップは、内容量が変わる検索フロートの直下へ追従させる。
     function positionDesktopMiniMap() {
@@ -1040,13 +1060,78 @@ async function main() {
             attributionControl: true
         }).setView([lat, lon], 15);
 
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(miniMap);
+        miniMapLayers = {
+            map: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+            }),
+            photo: L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg", {
+                minZoom: 14,
+                maxNativeZoom: 18,
+                maxZoom: 19,
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>'
+            })
+        };
+
+        miniMapLayers[miniMapLayerMode].addTo(miniMap);
+        addMiniMapLayerSwitch();
 
         miniMarker = L.marker([lat, lon]).addTo(miniMap);
         if (!STATE.isMobile) initMiniMapResize();
+    }
+
+    function setMiniMapLayer(mode) {
+        if (!miniMap || !miniMapLayers || !miniMapLayers[mode]) return;
+        if (mode === miniMapLayerMode && miniMap.hasLayer(miniMapLayers[mode])) return;
+
+        Object.values(miniMapLayers).forEach(layer => miniMap.removeLayer(layer));
+        miniMapLayerMode = mode;
+        miniMapLayers[mode].addTo(miniMap);
+        if (mode === "photo" && miniMap.getZoom() < 14) miniMap.setZoom(14);
+        saveMiniMapLayerMode(mode);
+        updateMiniMapLayerButtons();
+    }
+
+    function updateMiniMapLayerButtons() {
+        for (const button of miniMapLayerButtons) {
+            const active = button.dataset.layer === miniMapLayerMode;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", String(active));
+        }
+    }
+
+    function addMiniMapLayerSwitch() {
+        const LayerSwitch = L.Control.extend({
+            options: { position: "topright" },
+            onAdd() {
+                const control = L.DomUtil.create("div", "leaflet-bar mini-map-layer-switch");
+                control.setAttribute("role", "group");
+                control.setAttribute("aria-label", "ミニマップ背景");
+
+                miniMapLayerButtons = [
+                    ["map", "地図"],
+                    ["photo", "写真"]
+                ].map(([mode, label]) => {
+                    const button = L.DomUtil.create("button", "mini-map-layer-button", control);
+                    button.type = "button";
+                    button.dataset.layer = mode;
+                    button.textContent = label;
+                    button.title = mode === "map" ? "OpenStreetMapを表示" : "地理院写真を表示";
+                    button.addEventListener("click", event => {
+                        event.preventDefault();
+                        setMiniMapLayer(mode);
+                    });
+                    return button;
+                });
+
+                L.DomEvent.disableClickPropagation(control);
+                L.DomEvent.disableScrollPropagation(control);
+                updateMiniMapLayerButtons();
+                return control;
+            }
+        });
+
+        miniMap.addControl(new LayerSwitch());
     }
 
     function initMiniMapResize() {
