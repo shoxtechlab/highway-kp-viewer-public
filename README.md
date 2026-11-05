@@ -1,183 +1,183 @@
 # Highway KP Viewer
 
-高速道路の位置を、緯度・経度ではなくキロポスト（KP）を基準に確認するWebアプリケーションです。路線全体の施設・構造物を縦長の路線図にまとめ、指定KP、現在地、ICランプ、現場メモを一つの画面体系で扱います。
+高速道路のキロポスト（KP）を基準に、現在位置と周辺施設を確認するWebアプリです。縦長の路線図、GPSによるKP表示、地点・区間の追加、対応ICのランプ詳細を提供しています。現在はベータ版です。
 
-[公開サイトを開く](https://highway-kp-viewer.pages.dev/) · 現在の版: `26.0.0-beta.2`
+[公開アプリ](https://highway-kp-viewer.pages.dev/) · [操作・技術資料](docs/README.md) · [変更履歴](docs/release-notes.md) · [稼働中アプリの版番号](https://highway-kp-viewer.pages.dev/app-version.json)
 
-![E28 神戸淡路鳴門自動車道の路線ビュー](docs/e28-viewer-light-pc.png)
+![E28 神戸淡路鳴門自動車道の路線図](docs/e28-viewer-light-pc.png)
 
-## 1. 利用目的
+## 1. できること
 
-一般的な地図は地理的な位置関係の把握に優れています。一方、高速道路の点検、施設管理、工事、事故対応では「○○道 50.0KP」のように、路線とKPで場所を扱う場面が多くあります。
+| 用途 | 主な機能 |
+| --- | --- |
+| KPから場所を確認 | 路線・方向・KPを指定し、路線図と現地確認リンクを表示 |
+| 周辺施設を把握 | IC・JCT・SA・PA、橋梁・トンネルをKPに沿って配置 |
+| 現在地を確認 | GPS座標から収録路線・方向・KPを推定 |
+| 移動に合わせて閲覧 | 専用の走行モードでKP・速度と周辺の路線図を表示 |
+| 現場情報を追加 | 工事・事象・設備・メモを地点または区間として別レイヤーへ保存 |
+| ファイルで持ち運ぶ | 追加データをJSON・CSVで読み込み、書き出し |
+| 管理区間に絞る | 全国・道路会社・支社・管理事務所等の入口と表示範囲 |
+| 現地を確認 | Google Street Viewへのリンク、OSM地図・地理院写真のミニマップ |
 
-Highway KP Viewerは、次の確認を短い操作で行えるようにします。
-
-- KPを入力して、路線上の位置と周辺施設を確認する
-- IC・JCT・SA・PA、橋梁、トンネルの並びを俯瞰する
-- 指定地点をGoogle Street Viewで開く
-- GPSから路線、方向、KP、道路からの距離を推定する
-- 管理事務所など、担当区間に限定した表示を利用する
+道路ごとに、上り・下り、東行・西行、内回り・外回りの表示名へ対応します。複数の道路名・KP体系、不連続区間、未開通区間を持つ路線も扱います。収録内容や補正状況は路線によって異なります。
 
 ## 2. 基本操作
 
-### 2.1 路線とKPを指定する
+### 路線図を見る
 
-路線を選び、方向とKPを指定すると該当位置へ移動します。路線ごとの呼称に合わせて、上り・下りのほか、東行・西行、内回り・外回りにも対応します。
+路線一覧から対象路線を選び、方向とKPを入力して「表示」を押します。施設ラベルや本線上の区間を選ぶこともできます。収録範囲外や未開通区間では、その状態を案内します。
 
-![KP、方向、施設を一画面で確認](docs/e28-viewer-light-pc.png)
+拡大・縮小ボタンは長押しに対応し、PCではShift＋ホイールも利用できます。通常ビューの拡大上限は10倍です。KP軸の目盛りは縮尺に応じて0.1・0.5・1・5・10KP間隔へ切り替わります。
 
-複数の道路名やKP体系を含む路線、不連続区間、未開通区間も同じビューアで扱います。収録範囲外のKPは、意図しない地点へ丸めず範囲外として通知します。
+右上メニューからテーマ、橋梁・トンネル表示、編集モード等を選べます。E18・E30では、構造物ラベルのホバー／タップによる諸元表示を試験導入しています。OSM由来の延長は表示しません。
 
-### 2.2 現在地と走行状況を確認する
+### 走行モードを使う
 
-現在地取得では、GPS位置に近い収録路線と方向を判定し、KPへ変換します。走行モードではKP・速度・方向を大きく表示し、GPS取得間は直前の速度と方位から表示を補間します。
+メニューから開始すると、事前の測位待ちなしで専用画面へ進みます。本線上では路線・方向・KP・速度を表示し、周辺の施設や追加情報を確認できます。
 
-![E28 走行モードの表示例](docs/drive-mode-preview.png)
+本線外でも開始できます。その場合は開いていた路線を維持し、現在地KPは `--`、参考位置は灰色の横線で表示します。GPSが速度を返せば速度は表示します。路線図を手動で閲覧しても現在地の取得は続き、「現在地へ戻る」で追従へ戻れます。
 
-### 2.3 ICランプを確認する
+GPSロスト時は通常30秒まで位置を推定します。対象トンネルでは固定速度による推定を出口まで継続し、出口で復帰を待ちます。推定は実測と区別して表示します。
 
-対応するICでは、路線図からランプ詳細へ移動できます。ランプ線形を色分けし、個別のランプからStreet Viewを開けます。
+操作、デモ、判定条件、限界は[走行モード仕様](docs/drive-mode.md)を参照してください。
 
-![津名一宮ICのランプ詳細](docs/e28-tsuna-ichinomiya-ramp-light-pc.jpg)
+### 地点・区間を追加する
 
-### 2.4 地点・区間情報を追加する
+編集モードでKP・方向・種別・名称を入力し、「追加する」で保存します。既存項目は「編集」→「変更を保存」で更新し、「編集をやめる」で新規入力へ戻ります。
 
-ケバブメニューから編集モードを開き、工事、事象、設備、メモなどをKPに重ねられます。基礎となるIC・橋梁・トンネルとは別レイヤーで管理するため、確認済みデータを変更しません。
+![E28の編集パネル構成例](docs/e28-annotation-editor-light-pc.jpg)
 
-![地点・区間情報の入力](docs/e28-annotation-editor-light-pc.jpg)
+画像はパネル構成の参考です。現在のファイル操作欄は次の構成です。
 
-追加情報は地点または区間、方向、種別、表示期限を指定できます。端末内だけに保存する個人情報と、管理者が全利用者へ共有する情報を分けて扱います。
+```text
+この路線の追加データ
+[全削除]       [ファイル読込] [JSON ▼] [書き出し]
+```
 
-![追加情報を路線図へ表示](docs/e28-annotation-result-light-pc.jpg)
-
-## 3. 提供機能
-
-| 分類 | 主な機能 |
+| 保存・ファイル操作 | 動作 |
 | --- | --- |
-| 路線表示 | KP軸、方向別線形、施設、橋梁、トンネル、未開通・不連続区間 |
-| 位置検索 | KP→座標、GPS→路線・方向・KP、近接路線候補 |
-| 現地確認 | Google Street Viewへの遷移、ミニマップ |
-| 走行支援 | 継続GPS、速度・方位表示、取得間のKP補間 |
-| 区間表示 | 全国、道路会社、支社、管理事務所、管理センター別入口 |
-| 追加情報 | 個人メモ、管理者共有、期限、種別フィルター、競合検出 |
-| 利用環境 | スマートフォン、PC、PWA、ダークモード |
+| この端末のみ | IndexedDBへ保存。管理者キー不要 |
+| 共有・全員に表示 | サーバーへ保存。追加・変更・削除に管理者キーが必要 |
+| ファイル読込 | CSV・JSONを検証して端末へ保存。共有投稿にはならない |
+| 書き出し | 現在の路線の追加データをJSONまたはCSVで保存 |
+| 全削除 | 件数を確認して削除。共有項目を含む場合は管理者キーが必要 |
 
-## 4. デモ
+JSONは属性を確認して保存する用途、CSVは表計算ソフトで編集する用途に向いています。同じIDを維持して読み込むと更新でき、IDを削除すると新規項目になります。
 
-- [E28 神戸淡路鳴門自動車道](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&portal=honshi)
-- [E30 瀬戸中央自動車道](https://highway-kp-viewer.pages.dev/viewer.html?route=e30&portal=honshi)
-- [E28 神戸管理センター区間](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&scope=honshi-kobe-office&portal=honshi)
-- [E28 鳴門管理センター区間](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&scope=honshi-naruto-office&portal=honshi)
-- [E30 坂出管理センター区間](https://highway-kp-viewer.pages.dev/viewer.html?route=e30&scope=honshi-sakaide-office&portal=honshi)
-- [E28 GPSデバッグ入力付き](https://highway-kp-viewer.pages.dev/viewer.html?route=e28&portal=honshi&debugGps=1)
-- [E28 走行モード表示デモ](https://highway-kp-viewer.pages.dev/drive.html?route=e28&portal=honshi&demo=1&demoKp=50)
-- [津名一宮IC ランプ詳細](https://highway-kp-viewer.pages.dev/prototypes/ic-ramps/?ic=tsuna-ichinomiya&returnTo=%2Fviewer%3Froute%3De28%26portal%3Dhonshi)
+入力例・必須列・再読込・重複防止・削除範囲は[編集モードの操作とファイル形式](docs/user-annotations.md)にまとめています。
 
-走行モード表示デモはGPSを取得せず、画面確認用の固定値を表示します。
+### IC内部を確認する
 
-## 5. データと利用上の注意
+対応するICの小さなランプボタンから詳細ページへ移動し、色分けしたランプを選択してStreet Viewを開けます。現在のベータ公開対象はE28の津名一宮ICです。
 
-路線形状の基礎にはOpenStreetMap（OSM）を利用し、対象路線の抽出、方向別経路の構成、距離計算、KP基準点による補正を行っています。OSMの形状だけで正式な道路KPを確定することはできません。
+[ICランプページの操作と公開範囲](docs/ic-ramp-pages.md)
 
-- 表示値は参考情報です
-- 工事、規制、測量、保守などでは道路管理者の最新資料を優先してください
-- Google Street ViewはGoogle LLCの外部サービスです。本プロジェクトとの提携・承認関係はありません
-- OSM由来データにはODbLと帰属表示が適用されます
+## 3. GPS不要のデモと入口
 
-詳細は[OpenStreetMap由来の路線データ](docs/osm-derived-route-data.md)と[地図コンテンツ利用ガイド](docs/map-content-usage.md)を参照してください。
+デモは固定の表示確認用です。GPSを取得せず、位置検索APIを定期送信しません。路線情報等の読込には通信を使用します。
 
-## 6. 今後の拡張
+| 画面 | リンク |
+| --- | --- |
+| E28の通常路線図 | [開く](https://highway-kp-viewer.pages.dev/viewer?route=e28&portal=honshi) |
+| E30の通常路線図 | [開く](https://highway-kp-viewer.pages.dev/viewer?route=e30&portal=honshi) |
+| E28の走行モード・50KP | [開く](https://highway-kp-viewer.pages.dev/drive.html?route=e28&demo=1&demoKp=50) |
+| E28のトンネル内GPSロスト・20秒 | [開く](https://highway-kp-viewer.pages.dev/drive.html?route=e28&demo=1&demoState=tunnel&demoKp=10&demoLost=20) |
+| E28のトンネル出口・GPS復帰待ち | [開く](https://highway-kp-viewer.pages.dev/drive.html?route=e28&demo=1&demoState=tunnel&demoKp=10&demoLost=150) |
+| 津名一宮ICランプ詳細 | [開く](https://highway-kp-viewer.pages.dev/prototypes/ic-ramps/?ic=tsuna-ichinomiya) |
+| 追加データのCSV→JSON変換 | [開く](https://highway-kp-viewer.pages.dev/tools/annotation-converter/) |
 
-- 収録路線と管理区間の拡大
-- 車線数、規制方向、設備属性を使った表示の高度化
-- IC・JCTランプ詳細の対応範囲拡大
-- 特殊KP、南北別KP、未開通区間を含む複雑なKP体系への対応
-- 走行履歴を利用した位置推定の安定化
-- 一時情報の承認・配信運用と外部システム連携
-- キャリブレーション候補の自動検出と品質評価
-- オフライン利用範囲の拡大
+編集モードは通常路線図の右上メニューから開いてください。「この端末のみ」の追加・ファイル読込には管理者キーを必要としません。
+
+## 4. データの性質と公開範囲
+
+路線形状の基礎にOpenStreetMapを使用し、KPを扱える形式へ加工しています。施設や構造物の位置・延長の出典、補正の密度は一律ではありません。道路管理、工事、規制、測量等の判断では道路管理者の最新資料を優先してください。
+
+この公開リポジトリはソースと説明資料のスナップショットです。公開アプリとは別に更新しているため、すべての最新コード・デプロイ設定が常に含まれるわけではありません。文書に記した対象版を確認してください。
+
+| 公開するもの | このリポジトリに含めないもの |
+| --- | --- |
+| 操作説明、API仕様、一般的な位置変換アルゴリズム | 路線別の高精度GeoJSON |
+| 公開可能な画面・サーバー実装のスナップショット | 路線別のKP補正点・中間生成物 |
+| 設定の構造とデータモデル | 内部の加工手順・路線別設定・認証キー |
+
+路線ファイルを収録しないことと、APIの表示情報を秘匿することは別です。APIは施設・構造物・KP範囲など、表示に必要な路線情報を返します。高精度線形全体は返しません。
+
+[OSM由来データの説明](docs/osm-derived-route-data.md) · [地図コンテンツ利用ガイド](docs/map-content-usage.md)
 
 ---
 
-## 7. システム構成
+## 5. システム構成
 
-ここからは開発者向けの情報です。
+以下は開発者向けの説明です。
 
 ```mermaid
 flowchart LR
-  U[ブラウザ / PWA] --> P[Cloudflare Pages]
-  P --> F[Pages Functions API]
-  F --> R[(Cloudflare R2\n非公開路線データ)]
-  F --> D[(Cloudflare D1\n共有追加情報)]
-  O[OpenStreetMap] --> C[ローカル加工・KP補正]
-  M[公開資料・現地確認] --> C
-  C --> R
+    B[ブラウザ / PWA] --> P[Cloudflare Pages]
+    B --> F[Pages Functions API]
+    F --> R[(R2 / 路線データ)]
+    F --> D[(D1 / 共有追加情報)]
+    B --> I[(IndexedDB / 端末追加情報)]
+    B --> L[(localStorage / 表示設定)]
 ```
 
-- フロントエンド: HTML / CSS / Vanilla JavaScript
-- 配信: Cloudflare Pages
-- API: Cloudflare Pages Functions
-- 路線データ: Cloudflare R2
-- 共有追加情報: Cloudflare D1
-- 線形加工: `tools/osm-kp/`
+| 層 | 構成 |
+| --- | --- |
+| 画面 | HTML・CSS・JavaScript、SVGによる路線図 |
+| ミニマップ | Leaflet、OSM地図・地理院写真 |
+| 位置API | Cloudflare Pages Functions |
+| 高精度路線線形 | 非公開のCloudflare R2 |
+| 共有追加データ | Cloudflare D1 |
+| 端末追加データ | IndexedDB |
+| テーマ・表示設定 | localStorage |
+| 開発用サーバー | Node.js。Cloudflare本番の実行環境とは別 |
 
-ブラウザへ路線全体の高精度GeoJSONは配布せず、APIが表示または座標変換に必要な結果を返します。
+本番で常駐するNode.jsサーバーを起動する構成ではありません。Pages Functionsがリクエスト単位でAPIを実行します。ブラウザは位置情報を継続取得しますが、WebSocket等による利用者同士の位置共有を提供する機能ではありません。
 
-## 8. API
+## 6. APIとデータモデル
 
-```text
+```http
 GET /api/route/e28
-GET /api/position?route=e28&direction=down&kp=50.0
-GET /api/nearest?route=e28&lat=34.38&lon=134.84&heading=200&speed=25&accuracy=12
+GET /api/position?route=e28&direction=down&kp=50
+GET /api/nearest?lat=34.38&lon=134.84&heading=200&speed=25&accuracy=12
 ```
 
-`/api/nearest`で`route`を省略すると、収録路線全体から最有力候補と代替候補を返します。方向は内部値の`up`・`down`に加え、路線別の表示名を`directionLabel`として返します。
+`nearest` は `route` を指定するとその路線内、指定しなければ収録路線から候補を検索します。返却値は内部方向 `up/down` と路線別の表示名 `directionLabel` を区別します。速度入力はm/s、画面表示はkm/hです。
 
-KPから座標を求める処理と、現在地を路線へ射影してKPを求める処理は、模式図と実装コードを[KP・座標変換アルゴリズム](docs/kp-coordinate-algorithms.md)にまとめています。
+- [路線・KP検索API](docs/route-search-api.md)
+- [KP・座標変換アルゴリズム](docs/kp-coordinate-algorithms.md)
+- [データモデルと公開境界](docs/data-model.md)
+- [追加情報の保存・競合検出・ファイル形式](docs/user-annotations.md)
 
-## 9. 公開スナップショットの確認
+## 7. 開発と確認
+
+公開スナップショットの静的成果物は、収録された `package.json` の `npm run build` で生成します。ただし、路線データ・R2/D1・シークレットがないため、公開リポジトリだけで本番相当の位置APIを再現することはできません。
+
+非公開の開発元では、Node.js 22以上を使用し、次の操作を用います。
 
 ```powershell
 npm run dev
+npm run verify:js
+npm run build
 ```
 
-Node.js 18以降で`npm run build`を実行すると、公開可能なUIとAPIコードを`dist/`へ出力します。高精度路線データは含まれないため、このリポジトリ単体では公開サイトと同じ座標検索結果を再現できません。
+開発サーバーの既定URLは `http://127.0.0.1:8787/`、ビルド先は `dist/` です。文書だけの確認で、路線データ全件の重い検証やブラウザ操作を行う必要はありません。画面・API・データ変更では対象機能に応じた検証を行います。
 
-主なディレクトリは次のとおりです。
+公開用コードと文書の更新は明示的に行い、非公開側のgit履歴を公開側へマージしません。公開コミットの著者・コミッターは `shoxtechlab` に統一して確認します。
 
-```text
-css/                 画面スタイル
-js/                  ビューアと走行モード
-functions/api/       Cloudflare Pages Functions
-lib/                 KP変換・路線探索の共通ロジック
-data-model/          公開可能なデータ構造
-portals/             会社・支社・管理事務所別の入口
-prototypes/ic-ramps/ 公開承認済みのICランプページ
-migrations/          共有追加情報用D1スキーマ
-```
+## 8. 改善候補
 
-## 10. リポジトリと公開範囲
+以下は今後の候補であり、実装済み機能ではありません。
 
-このリポジトリは、UI、APIインターフェース、公開可能なデータモデルを説明する公開用スナップショットです。公開サイトの自動デプロイ元ではなく、節目ごとに更新します。
+- 収録路線・管理区間・ICランプ詳細の拡充
+- 車線数・設備属性を使った路線図の表示
+- 特殊KP体系への対応拡張
+- トンネルでの減速・渋滞とGPS復帰を考慮した推定改善
+- ファイル読込前の差分確認・重複確認
+- 追加データの選択書出・部分削除
+- 共有情報の再取得方法と外部連携の整理
 
-次の情報は公開しません。
-
-- 高精度な`road.json`・`route.geojson`
-- KPキャリブレーション点
-- OSMの中間生成物と路線別加工設定
-- 詳細な抽出・補正手順
-
-## 11. 技術資料
-
-- [データモデルと移行方針](docs/data-model.md)
-- [路線・KP検索API](docs/route-search-api.md)
-- [ICランプ詳細の実装](docs/ic-ramp-pages.md)
-- [追加地点・区間の保存と共有](docs/user-annotations.md)
-- [OSM由来データの公開方針](docs/osm-derived-route-data.md)
-- [KP・座標変換アルゴリズム](docs/kp-coordinate-algorithms.md)
-
-## 12. ライセンス
+## 9. ライセンス
 
 Copyright © 2026 shoxtechlab. All Rights Reserved.
 
-書面による事前の許可なく、利用、複製、改変、再配布、派生物の作成、販売その他の商用利用を行うことはできません。第三者のソフトウェアおよびデータには、それぞれのライセンスが適用されます。詳細は[LICENSE](LICENSE)を参照してください。
+許諾なく利用・複製・改変・再配布等を認めるオープンソースライセンスではありません。ソースの公開と利用許諾は別です。詳細は[LICENSE](LICENSE)を参照してください。第三者ソフトウェア・地図・データには、それぞれのライセンスが適用されます。

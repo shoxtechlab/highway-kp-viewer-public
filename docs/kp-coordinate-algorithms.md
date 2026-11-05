@@ -2,7 +2,13 @@
 
 Highway KP ViewerのAPIは、補正済みの路線線形を点列として参照し、KPと緯度・経度を相互変換します。路線全体の高精度GeoJSONはブラウザへ配布せず、変換結果だけを返します。
 
+確認日：2026年11月6日。[API仕様](route-search-api.md) · [資料一覧](README.md)
+
+模式図とコードは公開APIで使用する中核処理の抜粋です。入力検証・端点処理・レスポンス整形の全体は含みません。非公開のOSM抽出・KP補正工程とは区別します。
+
 ## 1. KPから緯度・経度を求める
+
+### 処理の流れ
 
 ```mermaid
 flowchart LR
@@ -10,9 +16,13 @@ flowchart LR
   B --> C{指定KPを挟む<br>点A・点Bを探索}
   C -->|範囲外| X[変換不可を返す]
   C -->|範囲内| D[区間内比率 t を計算]
-  D --> E[緯度・経度を線形補間]
-  E --> F[座標・KP・線分番号を返す]
+  D --> E[経度を線形補間]
+  D --> F[緯度を線形補間]
+  E --> G[座標・KP・線分番号を返す]
+  F --> G
 ```
+
+点Aと点BのKPをそれぞれ `kpA`、`kpB` とすると、区間内の比率は次のとおりです。
 
 ```text
 t = (targetKP - kpA) / (kpB - kpA)
@@ -20,7 +30,9 @@ lon = lonA + (lonB - lonA) × t
 lat = latA + (latB - latA) × t
 ```
 
-中核実装: [`js/kpGeo.js`](../js/kpGeo.js)
+### 中核コード
+
+実装: [`js/kpGeo.js`](../js/kpGeo.js)
 
 ```js
 if (targetKP >= a.kp && targetKP <= b.kp) {
@@ -37,9 +49,11 @@ if (targetKP >= a.kp && targetKP <= b.kp) {
 }
 ```
 
-単一路線は入力KPをそのまま使います。複数のKP体系を持つ路線では、通算位置から対象区間と路線KPを決定したあと、同じ補間処理へ渡します。
+APIでは、単一路線は入力KPをそのまま使います。複数のKP体系を持つ路線では、通算位置から対象区間と路線KPを決定したあと、同じ補間処理へ渡します。
 
 ## 2. 現在地からKPを求める
+
+### 処理の流れ
 
 ```mermaid
 flowchart TD
@@ -63,7 +77,9 @@ distance = |P|
 KP = (chainageA + (chainageB - chainageA) × t) / 1000
 ```
 
-中核実装: [`js/routeMatcher.js`](../js/routeMatcher.js)
+### 線分への射影
+
+実装: [`js/routeMatcher.js`](../js/routeMatcher.js)
 
 ```js
 const dx = bx - ax;
@@ -83,7 +99,7 @@ return {
 };
 ```
 
-射影位置のKPは、同じ比率`t`で両端の補正済み累積距離を補間します。
+### 射影位置からKPを補間
 
 ```js
 const projection = projectToSegment(position, a, b);
@@ -93,6 +109,7 @@ if (!best || projection.distanceM < best.distanceM) {
     + (b.chainageM - a.chainageM) * projection.t;
   best = {
     kp: chainageM / 1000,
+    chainageM,
     distanceM: projection.distanceM,
     snappedLat: projection.lat,
     snappedLon: projection.lon,
@@ -103,6 +120,8 @@ if (!best || projection.distanceM < best.distanceM) {
 ```
 
 ## 3. 路線と方向の選択
+
+`route`が指定されていない場合は、全路線を無条件に精査するのではなく、まず路線の包含範囲から近い候補を絞り込みます。その後、各候補について上り・下り両方向へ同じ射影を行います。
 
 ```mermaid
 flowchart LR
@@ -125,4 +144,10 @@ flowchart LR
 - KPはOSM形状から自動的に確定する値ではなく、内部で補正済みの累積距離を参照します。
 - GPS誤差、上下線の近接、JCTや並行路線では候補が曖昧になる場合があります。
 - APIが返すKPは0未満にならないよう公開境界で正規化します。
+
+## 5. 走行モードの位置推定との違い
+
+本書の補間は、隣接する線形点のKP・座標の関係から1点を求める計算です。走行モードはさらに、直前の速度と経過時間から画面上のKPを短時間進めます。後者は新しい測位結果ではなく、GPS未更新時にも誤差が増えます。
+
+通常区間の30秒制限、トンネル出口での停止、復帰の整合判定は[走行モード仕様](drive-mode.md#6-gpsロストとトンネル通過)に記載しています。
 
