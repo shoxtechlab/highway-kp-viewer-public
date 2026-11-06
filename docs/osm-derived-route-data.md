@@ -1,6 +1,8 @@
 # OpenStreetMap由来の路線データについて
 
-[資料一覧](README.md) · [データモデル](data-model.md)
+[ドキュメント案内](README.md#開発仕様) / 開発・仕様 05 / **OSM由来データ**
+
+文書整理：2026年11月7日。公開するデータの性質・帰属・境界を説明し、加工手順は扱いません。
 
 Highway KP Viewerでは、高速道路の形状を表現する基礎資料の一つとしてOpenStreetMap（OSM）を利用しています。
 
@@ -46,4 +48,8 @@ OSMの道路形状だけから、道路管理上の正式なKPを確定するこ
 OSM由来データにはOpen Database License（ODbL）が適用されます。画面および関連資料では `© OpenStreetMap contributors` の帰属表示を行います。
 
 独自の加工ロジック、画面、追加データと、OSM由来部分の権利関係は同一ではありません。社外提供、再配布、データベース公開を行う場合は、利用形態に応じてODbL上の義務を個別に確認します。
+
+---
+
+前：[追加画像の保存設計](annotation-images-design.md) · [ドキュメント案内](README.md#開発仕様) · 利用ガイド：[地図・写真の利用](map-content-usage.md)
 

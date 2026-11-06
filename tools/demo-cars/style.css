@@ -1,0 +1,30 @@
+:root { color-scheme: light; --green: #087f3e; --bg: #f2f6f3; --panel: #fff; --ink: #18251d; --line: #b8c9be; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Yu Gothic UI", "Meiryo", sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px; background: #00973a; color: #fff; }
+header span { font-weight: 800; }
+h1 { margin: 0; font-size: 20px; }
+main { max-width: 760px; margin: auto; padding: 20px 14px 40px; }
+.panel { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--panel); margin-bottom: 16px; }
+h2 { margin: 0 0 16px; display: flex; gap: 10px; justify-content: space-between; align-items: center; font-size: 17px; }
+.state { flex-shrink: 0; font-size: 12px; color: #5c6860; }
+.state.running { color: #b91c1c; }
+label { display: block; font-size: 13px; font-weight: 700; }
+input, select, button { font: inherit; min-height: 44px; border-radius: 8px; }
+input, select { width: 100%; padding: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); margin-top: 5px; }
+button { padding: 8px 14px; border: 1px solid var(--green); background: var(--green); color: #fff; font-weight: 700; cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }
+.secondary { background: var(--panel); color: var(--green); }
+.danger { background: #b91c1c; border-color: #b91c1c; }
+.login-row, .toolbar, .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.login-row { flex-wrap: nowrap; }
+.login-row input { flex: 1; min-width: 0; }
+.login-row button { flex-shrink: 0; }
+.fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.actions { margin-top: 16px; }
+.actions a { margin-left: auto; color: var(--green); font-size: 13px; }
+p { font-size: 13px; line-height: 1.6; }
+#notice { min-height: 24px; }
+#notice.error { color: #b91c1c; }
+@media (max-width: 380px) { .panel { padding: 12px; } .fields { gap: 8px; } h2 { font-size: 15px; } }

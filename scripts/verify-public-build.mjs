@@ -10,6 +10,7 @@ const forbiddenNames = new Set([
 ]);
 const forbiddenSegments = new Set([
   "private-notes",
+  "docs-internal",
   "data-source",
   ".compiled-route-data"
 ]);

@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { compileDataModel } from "./lib/dataCompiler.mjs";
 import { writeCompiledRoadSources } from "./lib/roadSourceCompiler.mjs";
+import { injectViewerHomeConfig } from "./lib/viewerHomeConfig.mjs";
 
 const projectRoot = process.cwd();
 const outputDir = join(projectRoot, "dist");
@@ -68,7 +69,7 @@ for (const entry of publicEntries) {
 
 // These converters are intentionally published as unlinked utilities.
 // Copy only the allowlisted directories: other tools contain private assets.
-for (const toolName of ["kp-converter", "annotation-converter"]) {
+for (const toolName of ["kp-converter", "annotation-converter", "demo-cars"]) {
   await cp(
     join(projectRoot, "tools", toolName),
     join(outputDir, "tools", toolName),
@@ -101,6 +102,11 @@ await writeFile(
 );
 
 // Company, branch and office portals are generated from one organization registry.
+// 起動直後のホームリンクはAPIを待たず確定する。既存スコープからビルド時に生成。
+await writeFile(join(outputDir, "viewer.html"), injectViewerHomeConfig(
+  await readFile(join(projectRoot, "viewer.html"), "utf8"), compiledDataModel.runtimeScopes
+));
+
 // This keeps dozens of office pages from becoming separately maintained copies.
 const organizations = JSON.parse(
   await readFile(join(projectRoot, "data", "organizations.json"), "utf8")

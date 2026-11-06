@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 import { createRouteService, apiError } from "./server/route-service.js";
 import { loadRoadSource } from "./lib/roadSourceCompiler.mjs";
 import { buildRouteSearchIndex } from "./lib/routeSearchIndex.mjs";
+import { createLiveLocationService, memoryLiveLocationStore } from "./server/live-location-service.js";
+import { handleLiveLocationRequest } from "./server/live-location-handler.js";
+import { liveDemoPosition } from "./server/live-location-demo.js";
+import { memoryDemoSettingsStore, readDemoSettings, handleDemoAdminRequest } from "./server/live-demo-settings.js";
 
 const projectRoot = fileURLToPath(new URL(".", import.meta.url));
 const publicRoot = join(projectRoot, "dist");
@@ -98,9 +102,38 @@ async function serveStatic(pathname, response) {
 }
 
 export function createAppServer() {
+  const demoStore = memoryDemoSettingsStore();
+  const liveService = process.env.LIVE_LOCATIONS_ENABLED === "false" ? null : createLiveLocationService(memoryLiveLocationStore(), {
+    routeIds: async () => JSON.parse(await readFile(join(projectRoot, "data", "routes.json"), "utf8")).map(route => route.id)
+  });
+  if (liveService) {
+    const list = liveService.list;
+    liveService.list = async routeId => {
+      const result = await list(routeId);
+      const demo = liveDemoPosition(await readDemoSettings(demoStore, routeId, result.serverNow), routeId, result.serverNow);
+      if (demo) result.positions.push(demo);
+      return result;
+    };
+  }
   return createServer(async (request, response) => {
     try {
-      const url = new URL(request.url, `http://${request.headers.host || `${host}:${port}`}`);
+      // Tailscale Serve等のHTTPS終端をループバック経由で使う場合も、
+      // ブラウザのOriginと照合できるよう外側のスキームを復元する。
+      // LANから来た任意の転送ヘッダーは信用しない。
+      const loopback = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(request.socket.remoteAddress);
+      const scheme = loopback && request.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+      const forwardedHost = loopback ? request.headers["x-forwarded-host"] : null;
+      const url = new URL(request.url, `${scheme}://${forwardedHost || request.headers.host || `${host}:${port}`}`);
+      if (url.pathname === "/api/live-locations" || url.pathname === "/api/admin/demo-cars") {
+        const chunks = []; let size = 0;
+        for await (const chunk of request) { size += chunk.length; if (size > 2048) throw apiError(413, "入力が大きすぎます。"); chunks.push(chunk); }
+        const webRequest = new Request(url, { method: request.method, headers: request.headers,
+          ...(["GET", "HEAD"].includes(request.method) ? {} : { body: Buffer.concat(chunks) }) });
+        const result = url.pathname === "/api/admin/demo-cars"
+          ? await handleDemoAdminRequest(webRequest, { store: demoStore, adminKey: process.env.ANNOTATIONS_ADMIN_KEY })
+          : await handleLiveLocationRequest(webRequest, liveService);
+        response.writeHead(result.status, Object.fromEntries(result.headers)); response.end(await result.text()); return;
+      }
       if (url.pathname.startsWith("/api/")) {
         const body = await handleApi(url);
         response.writeHead(200, {

@@ -9,12 +9,13 @@ import {
   utcUsageWindow
 } from "../server/api-usage-guard.js";
 
-test("only route-data APIs are guarded", () => {
+test("route-data and live-location APIs share the daily safety guard", () => {
   assert.equal(isRouteApiPath("/api/route/e28"), true);
   assert.equal(isRouteApiPath("/api/position"), true);
   assert.equal(isRouteApiPath("/api/nearest"), true);
   assert.equal(isRouteApiPath("/api/batch/position"), true);
   assert.equal(isRouteApiPath("/api/batch/nearest"), true);
+  assert.equal(isRouteApiPath("/api/live-locations"), true);
   assert.equal(isRouteApiPath("/api/annotations"), false);
   assert.equal(isProtectedBatchApiPath("/api/batch/position"), true);
   assert.equal(isProtectedBatchApiPath("/api/position"), false);

@@ -1,8 +1,10 @@
 # 路線・KP検索API
 
-確認日：2026年11月6日。公開環境の基底URLは `https://highway-kp-viewer.pages.dev/api` です。
+[ドキュメント案内](README.md#開発仕様) / 開発・仕様 01 / **路線・KP検索API**
 
-画面の利用方法は[README](../README.md)、計算方法は[KP・座標変換アルゴリズム](kp-coordinate-algorithms.md)を参照してください。この文書は路線情報と位置変換の読取APIを説明します。追加地点の保存APIは[編集モード](user-annotations.md#7-データとapiの構成)へ分けています。
+確認対象：`2026.11.7-beta.10`。公開環境の基底URLは `https://highway-kp-viewer.pages.dev/api` です。
+
+画面の利用方法は[README](../README.md)、計算方法は[KP・座標変換アルゴリズム](kp-coordinate-algorithms.md)を参照してください。この文書は路線情報と位置変換の読取APIを説明します。追加地点の保存APIは[編集モード](user-annotations.md#7-データとapiの構成)、最新位置の公開APIは[位置公開](live-locations.md#6-apiと実装)へ分けています。
 
 ## 1. 共通仕様
 
@@ -100,3 +102,18 @@ GET /api/nearest?lat=34.729&lon=135.084&heading=180&speed=20&accuracy=12
 GPS更新間のKP推定はブラウザ側の走行モードで行います。APIの「線形上への射影・点間補間」と、画面の「速度×時間による移動推定」は別の処理です。
 
 キャッシュ、使用回数の制限、認証を必要とする別用途の一括変換等は、各実行環境の設定・入口に従います。ここに示す読取APIの説明から、一括APIの認証条件を推測しないでください。
+
+## 6. APIの使い分けと利用枠
+
+| 目的 | API | 詳細資料 |
+| --- | --- | --- |
+| KPと座標の相互変換 | `position`／`nearest` | 本書 |
+| 工事・設備などの保存 | `annotations` | [編集モード](user-annotations.md#7-データとapiの構成) |
+| 車両の最新KPの公開・取得 | `live-locations` | [位置公開](live-locations.md#6-apiと実装) |
+| 管理者による一括変換 | `batch/position`／`batch/nearest` | 管理者認証付き。通常の読取APIとは別の入口 |
+
+路線・位置関連APIの共通枠は標準50,000回／UTC日です。`API_DAILY_LIMIT`で変更でき、上限時は429、共通停止時は503です。共有追加データなど、すべてのAPIをこの枠で数えるわけではありません。カウンター自体にもD1照会が発生し、課金額の上限にはなりません。接続元別の短時間レート制限を実装済みとする説明ではありません。
+
+---
+
+[ドキュメント案内](README.md#開発仕様) · 次：[KP・座標変換アルゴリズム](kp-coordinate-algorithms.md) · 利用者向け：[走行モード](drive-mode.md)

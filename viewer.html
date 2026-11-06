@@ -21,10 +21,12 @@
     <script>if(new URLSearchParams(location.search).get("ui")!=="v1")document.documentElement.classList.add("ui-v2")</script>
     <header id="topbar">
         <div class="app-brand-area">
-            <a href="index.html" id="app-title">
+            <a id="app-title" aria-disabled="true">
                 <span class="app-title-main">KP Viewer</span>
                 <span class="app-title-sub">高速道路路線図</span>
             </a>
+            <script id="viewer-home-config" type="application/json">{"portals":{"national":"index.html","honshi":"honshi/"},"scopes":{}}</script>
+            <script src="js/viewerHome.js"></script>
         </div>
 
         <div id="route-title"></div>

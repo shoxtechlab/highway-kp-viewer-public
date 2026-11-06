@@ -1223,7 +1223,7 @@ body.mini-map-resizing {
 .structure-details {
     position: fixed;
     z-index: 2200;
-    width: min(260px, calc(100vw - 16px));
+    width: min(182px, calc(100vw - 16px));
     padding: 14px 16px;
     border: 1px solid #b9ccc0;
     border-radius: 14px;
@@ -1234,7 +1234,7 @@ body.mini-map-resizing {
     line-height: 1.5;
 }
 .structure-details[hidden] { display: none; }
-.structure-details strong { font-size: 17px; }
+.structure-details strong { font-size: 17px; overflow-wrap: anywhere; }
 .structure-details p { margin: 3px 0 10px; color: #526159; }
 .structure-details dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 18px; margin: 0; }
 .structure-details dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }

@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>走行モード | KP Viewer</title>
-    <meta name="theme-color" content="#00973a">
+    <meta name="theme-color" content="#008b38">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
     <link rel="stylesheet" href="css/drive.css">
 </head>
@@ -17,10 +18,16 @@
                 <h1 id="drive-route-name">路線を確認中</h1>
             </div>
             <div class="drive-header-actions">
+                <div class="drive-share-control">
+                    <button id="drive-share-toggle" type="button" aria-pressed="false">
+                        <span id="drive-share-label">位置を公開</span>
+                    </button>
+                </div>
                 <button id="drive-layer-toggle" type="button" aria-expanded="false" aria-controls="drive-layer-menu">表示設定</button>
                 <button id="drive-stop" type="button">走行終了</button>
                 <div id="drive-layer-menu" class="drive-layer-menu" hidden>
                     <strong>走行モードの表示</strong>
+                    <p id="drive-share-status" role="status">位置公開オフ</p>
                     <label><input type="checkbox" data-layer="bridges">橋梁</label>
                     <label><input type="checkbox" data-layer="tunnels">トンネル</label>
                     <label><input type="checkbox" data-layer="incident">事象・事故</label>
@@ -47,12 +54,24 @@
         </section>
 
         <div id="drive-route-change" role="status" aria-live="polite" hidden></div>
-        <p id="drive-status" role="status" aria-live="polite">現在地を取得しています。</p>
+        <footer id="drive-footer">
+            <p id="drive-status" role="status" aria-live="polite">測位中</p>
+            <p id="drive-share-state" role="status">非公開</p>
+        </footer>
     </main>
     <dialog id="drive-offroad-dialog" class="drive-dialog">
         <h2>本線外です</h2>
-        <p id="drive-offroad-message">現在地は収録路線から離れています。最寄りの路線を参考表示します。</p>
+        <p id="drive-offroad-message">現在地は本線外です。路線図は引き続き閲覧できます。現在地KPは表示しません。</p>
         <button id="drive-offroad-close" type="button">OK</button>
+    </dialog>
+    <dialog id="drive-share-dialog" class="drive-dialog">
+        <form method="dialog">
+            <h2>位置を公開しますか？</h2>
+            <p>走行モードであなたの位置情報を公開すると、このサイトの閲覧者はあなたの走行する路線・方向・0.1KP単位の位置を確認できます。位置情報は匿名のユーザー番号で表示されます。</p>
+            <p>上部の公開ボタンでいつでも停止できます。走行終了・本線外への移動・アプリの終了・画面の非表示・GPSロスト時も公開を停止します。30秒更新されないと非表示になります。</p>
+            <button value="no" autofocus>公開しない</button>
+            <button value="yes">位置を公開する</button>
+        </form>
     </dialog>
     <script type="module" src="js/drive.js"></script>
 </body>

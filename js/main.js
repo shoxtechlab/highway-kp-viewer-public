@@ -10,9 +10,10 @@ import { resolveRouteScope } from "./routeScope.js";
 import { initEditorPreview, renderEditorRecords } from "./editorPreview.js";
 import { parseKpInput } from "./kpInput.js";
 import { createSelectionUrl, readSelectionFromSearch } from "./selectionUrl.js";
-import { createPrintDocument, preparePrintSvg } from "./printView.js";
+import { createPrintDocument, preparePrintSvg, isIosStandalone, openInlinePrintPreview } from "./printView.js";
 import { initStructureDetails } from "./structureDetails.js";
 import { withStructureKeys } from "./structureIdentity.js";
+import { createLiveLocationReader, renderLiveLocations } from "./liveLocations.js";
 
 async function fetchApi(path) {
     const response = await fetch(path);
@@ -69,6 +70,7 @@ async function main() {
     const minManualZoom = 0.2;
     const maxManualZoom = 10;
     let userLayerRecords = [];
+    let sharedPositions = [];
     let hiddenUserLayerTypes = new Set();
     initTheme({ onChange: () => render() });
 
@@ -132,12 +134,15 @@ async function main() {
         ? `${road.name || routeId.toUpperCase()} | ${scope.name}`
         : sectionTitle || road.name || routeId.toUpperCase();
     document.title = `${pageTitle} | KP Viewer`;
-    const portalHomes = {
-        national: "index.html",
-        honshi: "honshi/"
-    };
-    const home = scope?.home || portalHomes[portalId] || road.home;
-    if (appTitle && home) appTitle.href = home;
+    // 入口指定の戻り先は同期ヘッダー初期化で確定済み。APIの完了順では変更しない。
+    // 未ビルドの開発画面など、未確定の場合だけ既存設定で補完する。
+    if (appTitle && !appTitle.hasAttribute("href")) {
+        const home = scope?.home || (!scopeId && !portalId ? road.home || "index.html" : null);
+        if (home) {
+            appTitle.href = home;
+            appTitle.removeAttribute("aria-disabled");
+        }
+    }
     if (routeTitle) routeTitle.textContent = pageTitle;
     initEditorPreview({
         routeId,
@@ -155,6 +160,23 @@ async function main() {
             render();
         }
     });
+    const liveOption = document.createElement("label");
+    liveOption.className = "structure-visibility-option";
+    liveOption.innerHTML = '<input type="checkbox" id="show-live-locations"><span>他者の公開位置</span>';
+    document.querySelector(".structure-visibility-controls").appendChild(liveOption);
+    const liveCheckbox = liveOption.querySelector("input");
+    try { liveCheckbox.checked = localStorage.getItem("kp-live-locations-visible") === "true"; } catch {}
+    const liveReader = createLiveLocationReader({ routeId,
+        onChange: positions => { sharedPositions = positions; renderLiveLayer(); },
+        onAvailability: enabled => { liveOption.title = enabled ? "更新されない位置は30秒で非表示になります" : "位置公開は現在未設定です"; }
+    });
+    liveCheckbox.addEventListener("change", () => {
+        try { localStorage.setItem("kp-live-locations-visible", String(liveCheckbox.checked)); } catch {}
+        liveReader.setVisible(liveCheckbox.checked);
+    });
+    liveReader.setVisible(liveCheckbox.checked);
+    window.addEventListener("pagehide", () => liveReader.setVisible(false));
+    window.addEventListener("pageshow", event => { if (event.persisted) liveReader.setVisible(liveCheckbox.checked); });
     const coverage = {
         up: buildCoverage("up"),
         down: buildCoverage("down")
@@ -303,6 +325,12 @@ async function main() {
                 record.name
             )
         });
+        renderLiveLayer();
+    }
+
+    function renderLiveLayer() {
+        const svg = container.querySelector("svg");
+        if (svg) renderLiveLocations(svg, sharedPositions, { start: STATE.viewStart, end: STATE.viewEnd, kpToY });
     }
 
     function buildCoverage(direction) {
@@ -950,8 +978,9 @@ async function main() {
                 error.textContent = "現在の路線名に含まれる有効な開始・終了KPを入力してください。";
                 return;
             }
-            const printWindow = window.open("", "_blank");
-            if (!printWindow) {
+            const inlinePreview = isIosStandalone();
+            const printWindow = inlinePreview ? null : window.open("", "_blank");
+            if (!inlinePreview && !printWindow) {
                 error.textContent = "印刷画面を開けませんでした。ポップアップを許可してください。";
                 return;
             }
@@ -981,10 +1010,15 @@ async function main() {
             }
             const cleanSvg = preparePrintSvg(printSvg);
             const rangeLabel = `${system?.name || "路線KP"} ${formatKp(inputStart)}〜${formatKp(inputEnd)} KP`;
-            printWindow.document.open();
-            printWindow.document.write(createPrintDocument({ svg: cleanSvg, title: pageTitle, rangeLabel }));
-            printWindow.document.close();
             dialog.close();
+            const printOptions = { svg: cleanSvg, title: pageTitle, rangeLabel };
+            if (inlinePreview) {
+                openInlinePrintPreview(printOptions);
+            } else {
+                printWindow.document.open();
+                printWindow.document.write(createPrintDocument(printOptions));
+                printWindow.document.close();
+            }
         });
     }
 

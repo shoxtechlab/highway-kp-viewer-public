@@ -1,4 +1,6 @@
 import { readLocalAnnotations } from "./annotationStore.js";
+import { createLivePublisher, drivePublicPosition } from "./liveLocations.js";
+import { initDriveHeaderTitle } from "./driveHeader.js";
 
 const PIXELS_PER_KM = 120;
 const API_INTERVAL_MS = 5000;
@@ -52,11 +54,14 @@ let referenceMatch = null;
 let tunnelEstimate = null;
 let offroadNoticeShown = false;
 let driveAnnotations = [];
+let sharedFix = null;
+let sharingWanted = false;
 let annotationLoadId = 0;
 const driveLayers = readDriveLayerSettings();
 
 const routeNumber = document.getElementById("drive-route-number");
 const routeName = document.getElementById("drive-route-name");
+const fitRouteHeaderTitle = initDriveHeaderTitle(routeName);
 const directionEl = document.getElementById("drive-direction");
 const kpEl = document.getElementById("drive-kp");
 const kpReadoutEl = document.querySelector(".drive-kp");
@@ -80,6 +85,53 @@ const layerMenu = document.getElementById("drive-layer-menu");
 const offroadDialog = document.getElementById("drive-offroad-dialog");
 const offroadMessage = document.getElementById("drive-offroad-message");
 const offroadClose = document.getElementById("drive-offroad-close");
+const shareButton = document.getElementById("drive-share-toggle");
+const shareLabel = document.getElementById("drive-share-label");
+const shareStatus = document.getElementById("drive-share-status");
+const shareState = document.getElementById("drive-share-state");
+const shareDialog = document.getElementById("drive-share-dialog");
+const publisher = createLivePublisher({
+    getPosition: () => {
+        if (demoMode) {
+            // 仮想位置は実測値と別扱い。画面表示中の通常デモだけを明示的同意後に公開する。
+            // トンネルロストの推定デモは公開せず、停止後も再送しない。
+            if (!sharingWanted || tunnelDemo || driveState !== "tracking" || !lastMatch) return null;
+            return drivePublicPosition({ driving: true, demo: true, onRoad: true, confirmed: true,
+                measuredAt: Date.now(), accuracy: 0, match: lastMatch,
+                kpSystemId: currentRoute?.road?.sections?.find(s => s.id === lastMatch.section)?.kp_system || lastMatch.section || "route" });
+        }
+        const section = currentRoute?.road?.sections?.find(item => item.id === sharedFix?.match?.section);
+        return drivePublicPosition({ driving: watchId != null, demo: demoMode,
+            onRoad: driveState === "tracking" && !outsideCount && !switchCandidate && !tunnelEstimate,
+            confirmed: !startupProvisional, measuredAt: sharedFix?.measuredAt, accuracy: sharedFix?.accuracy, match: sharedFix?.match,
+            kpSystemId: section?.kp_system || section?.id || "route" });
+    },
+    onStatus: ({ enabled, state, message }) => {
+        if (state === "error" && !enabled) sharingWanted = false;
+        const active = enabled || state === "checking";
+        shareButton.setAttribute("aria-pressed", String(active));
+        const offroadWaiting = enabled && state === "waiting" && driveState === "offroad";
+        shareLabel.textContent = offroadWaiting ? "位置公開待機中" : active ? "位置公開を停止" : "位置を公開";
+        shareState.textContent = state === "checking" ? "公開確認中" : state === "error" ? "公開エラー" : enabled ? state === "public" ? "公開中" : "位置公開待機" : "非公開";
+        shareButton.classList.toggle("is-sharing", enabled);
+        shareButton.classList.toggle("is-public", enabled && state === "public");
+        shareButton.title = offroadWaiting ? `${message}（押すと位置公開をオフ）` : message; shareStatus.textContent = message;
+        if (state === "error") showRouteChange(message);
+    }
+});
+if (demoMode) {
+    shareDialog.querySelector("h2").textContent = "デモ位置を公開しますか？";
+    shareDialog.querySelector("p").textContent = "実際の現在地ではなく、画面の仮想位置を「デモ・ユーザー」として公開します。誰でも閲覧でき、第三者の保存は防げません。トンネルGPSロストのデモは公開対象外です。";
+}
+shareButton.addEventListener("click", () => {
+    if (sharingWanted) { sharingWanted = false; void publisher.setEnabled(false); }
+    else shareDialog.showModal();
+});
+shareDialog.querySelector("form").addEventListener("submit", event => {
+    sharingWanted = event.submitter?.value === "yes";
+    void publisher.setEnabled(sharingWanted);
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden) publisher.suspend(); });
 
 applyStoredTheme();
 stopButton.addEventListener("click", () => stopDriveMode({ returnToViewer: true }));
@@ -120,15 +172,20 @@ async function start() {
     }
     if (demoMode) {
         if (!currentRoute) throw new Error("デモ表示する路線を指定してください。");
+        const bounds = routeKpBounds(currentRoute.road);
+        const positionKp = Math.max(bounds?.min ?? 0, Math.min(bounds?.max ?? Number(currentRoute.road.length),
+            params.has("demoKp") ? Number(params.get("demoKp")) : demoKp));
+        if (!Number.isFinite(positionKp)) throw new Error("デモKPが不正です。");
+        const section = currentRoute.road.sections?.find(s => positionKp >= s.route_start_km && positionKp <= s.route_end_km);
         const demoMatch = {
             route: currentRouteId,
             routeName: currentRoute.road.name,
-            section: null,
+            section: section?.id || null,
             direction: "down",
             directionLabel: currentRoute.road.direction_labels?.down || "下り",
-            kp: demoKp,
-            routeKp: demoKp,
-            localKp: demoKp,
+            kp: positionKp,
+            routeKp: positionKp,
+            localKp: section ? section.local_start_kp + (positionKp - section.route_start_km) * (section.kp_direction || 1) : positionKp,
             distanceM: 4.2,
             headingDifference: 3
         };
@@ -145,21 +202,21 @@ async function start() {
             beginTunnelEstimate();
             if (!tunnelEstimate) throw new Error("demoKpには登録済みトンネル内のKPを指定してください。");
             renderPredictedPosition();
-            statusEl.textContent = `デモ・GPS未更新 ${lostSeconds}秒 / ${statusEl.textContent}`;
+            statusEl.textContent = `デモ · GPS未更新${lostSeconds}秒`;
             return;
         }
-        statusEl.textContent = "表示確認用デモ / GPS精度 ±8m / 道路から約4m";
+        statusEl.textContent = "デモ · GPS ±8m · 道路4m";
         return;
     }
     latestPoint = saved?.point || null;
     if (latestPoint) lastPositionAt = Date.now();
     referenceMatch = createReferenceMatch(saved?.fallback || saved?.match);
-    if (referenceMatch) renderReferenceView(referenceMatch, "現在地から収録路線を検索しています。参考位置を表示中です。");
-    else renderRouteSearch(null, "現在地から収録路線を検索しています。");
+    if (referenceMatch) renderReferenceView(referenceMatch, "路線検索中");
+    else renderRouteSearch(null, "路線検索中");
 
     if (!navigator.geolocation) {
         statusEl.className = "is-error";
-        statusEl.textContent = "位置情報に非対応のため、参考位置を表示しています。";
+        statusEl.textContent = "位置情報に非対応";
         return;
     }
     watchId = navigator.geolocation.watchPosition(queuePosition, handlePositionError, {
@@ -180,6 +237,7 @@ function readStartPosition() {
 function queuePosition(position) {
     lastPositionAt = Date.now();
     latestPoint = {
+        measuredAt: Number(position.timestamp) || Date.now(),
         lat: position.coords.latitude,
         lon: position.coords.longitude,
         accuracy: position.coords.accuracy,
@@ -236,7 +294,7 @@ async function processLatestPosition() {
         if (match.distanceM > allowedDistance) {
             outsideCount += 1;
             if (outsideCount < OUTSIDE_FIXES && driveState === "tracking") {
-                statusEl.textContent = `本線位置を再確認しています（道路から約${formatDistance(match.distanceM)}）。`;
+                statusEl.textContent = `位置確認中 · 道路${formatDistance(match.distanceM)}`;
                 return;
             }
             switchCandidate = null;
@@ -264,7 +322,7 @@ async function processLatestPosition() {
             lastMatch = match;
             lastMatchAt = Date.now();
             renderMatch(match, point);
-            statusEl.textContent = "位置を確認中・暫定表示";
+            statusEl.textContent = "位置確認中";
             return;
         }
 
@@ -294,9 +352,8 @@ async function processLatestPosition() {
                 switchCandidate = match.route;
                 switchCount = 1;
             }
-            const candidateName = match.routeName || match.route.toUpperCase();
-            if (driveState === "searching") renderRouteSearch(point, `${candidateName}を確認しています（${switchCount}/${MATCH_CONFIRM_FIXES}）。`);
-            else statusEl.textContent = `${candidateName}への移動を確認しています（${switchCount}/${ROUTE_SWITCH_FIXES}）。`;
+            if (driveState === "searching") renderRouteSearch(point, `路線確認中 ${switchCount}/${MATCH_CONFIRM_FIXES}`);
+            else statusEl.textContent = `路線切替を確認中 ${switchCount}/${ROUTE_SWITCH_FIXES}`;
             const requiredFixes = driveState === "searching" ? MATCH_CONFIRM_FIXES : ROUTE_SWITCH_FIXES;
             if (switchCount < requiredFixes) return;
             if (match.route !== currentRouteId) await switchRoute(match.route, match.routeName);
@@ -314,7 +371,7 @@ async function processLatestPosition() {
     } catch (error) {
         console.error(error);
         statusEl.className = "is-error";
-        statusEl.textContent = "路線照合に失敗しました。次の位置情報で再試行します。";
+        statusEl.textContent = "路線照合エラー · 再試行中";
     } finally {
         requestPending = false;
     }
@@ -333,7 +390,7 @@ function renderPredictedPosition() {
         speedEl.parentElement.querySelector("span").textContent = "km/h";
         speedEl.title = "進入時速度（現在の実測速度ではありません）";
         statusEl.className = "is-gps-stale";
-        statusEl.textContent = `${tunnelEstimate.name} / ${estimate.atExit ? "出口付近・位置情報の復帰待ち" : "トンネル内・推定位置"} / 進入時速度 ${Math.round(tunnelEstimate.speed * 3.6)} km/h`;
+        statusEl.textContent = estimate.atExit ? "出口付近 · GPS待ち" : "トンネル内 · 推定中";
         return;
     }
     speedEl.removeAttribute("title");
@@ -411,10 +468,12 @@ function renderRouteHeader() {
     const numberMatch = road.name?.match(/^([A-Z]\d+[A-Z]?|C\d+)\s*/i);
     routeNumber.textContent = numberMatch?.[1]?.toUpperCase() || currentRouteId?.toUpperCase() || "---";
     routeName.textContent = road.name?.replace(numberMatch?.[0] || "", "") || road.name || currentRouteId?.toUpperCase() || "路線";
+    fitRouteHeaderTitle();
     document.title = `${road.name || currentRouteId?.toUpperCase() || "路線"} 走行モード | KP Viewer`;
 }
 
 function renderMatch(match, point, { predicted = false, lostMs = 0 } = {}) {
+    if (!predicted && Number.isFinite(point?.measuredAt)) sharedFix = { match: { ...match }, measuredAt: point.measuredAt, accuracy: point.accuracy };
     driveState = "tracking";
     displayedMatch = match;
     kpReadoutEl.hidden = false;
@@ -440,15 +499,15 @@ function renderGpsFreshness(point, match, { predicted = false, lostMs = 0 } = {}
         const seconds = Math.floor(lostMs / 1000);
         statusEl.classList.add("is-gps-stale");
         statusEl.textContent = lostMs >= MAX_PREDICTION_MS
-            ? `GPS未更新 ${seconds}秒・GPS信号待ち（推定停止）`
-            : `GPS未更新 ${seconds}秒・推定表示中`;
+            ? `GPS未更新${seconds}秒 · 推定停止`
+            : `GPS未更新${seconds}秒 · 推定中`;
         return;
     }
     if (startupProvisional) {
-        statusEl.textContent = "位置を確認中・暫定表示";
+        statusEl.textContent = "位置確認中";
         return;
     }
-    statusEl.textContent = `${predicted ? "速度補間中 / " : ""}GPS精度 ±${formatDistance(point?.accuracy)} / 道路から約${formatDistance(match?.distanceM)}`;
+    statusEl.textContent = `${predicted ? "推定 · " : ""}GPS ±${formatDistance(point?.accuracy)} · 道路${formatDistance(match?.distanceM)}`;
 }
 
 function renderRouteSearch(point, message) {
@@ -473,7 +532,7 @@ function renderRouteSearch(point, message) {
     readoutEl.classList.remove("is-gps-stale");
     renderGpsSpeed(point);
     statusEl.className = "";
-    statusEl.textContent = message || "現在地から収録路線を検索しています。";
+    statusEl.textContent = message || "路線検索中";
 }
 
 function createReferenceMatch(source) {
@@ -518,7 +577,7 @@ function renderReferenceView(match, message, { resetBrowse = true } = {}) {
     currentMarkerEl.hidden = true;
     currentEdgeEl.hidden = true;
     statusEl.className = "is-reference";
-    statusEl.textContent = message || "参考位置を表示中・現在地から路線を検索しています。";
+    statusEl.textContent = message || "路線検索中";
 }
 
 function renderOffroadView(match, point, { resetBrowse = true } = {}) {
@@ -539,14 +598,13 @@ function renderOffroadView(match, point, { resetBrowse = true } = {}) {
     currentMarkerEl.hidden = true;
     currentEdgeEl.hidden = true;
     statusEl.className = "is-reference";
-    statusEl.textContent = "本線外 / 開いていた路線を参考表示しています。";
+    statusEl.textContent = "本線外";
 }
 
 function showOffroadNotice(match) {
     if (offroadNoticeShown) return;
     offroadNoticeShown = true;
-    const routeLabel = currentRoute.road.name || currentRouteId.toUpperCase();
-    const message = `現在地は収録路線から離れています。開いていた${routeLabel}を参考表示します。現在地KPは「--」と表示します。`;
+    const message = "現在地は本線外です。路線図は引き続き閲覧できます。現在地KPは表示しません。";
     if (offroadMessage) offroadMessage.textContent = message;
     if (offroadDialog?.showModal) offroadDialog.showModal();
     else window.alert(message);
@@ -934,9 +992,9 @@ function formatLocalKp(item, direction) {
 
 function handlePositionError(error) {
     const messages = {
-        1: "位置情報の利用が許可されていません。",
-        2: "現在地を取得できませんでした。",
-        3: "位置情報の取得がタイムアウトしました。"
+        1: "位置情報が未許可",
+        2: "測位できません",
+        3: "測位タイムアウト"
     };
     // タイムアウトや一時的な測位失敗でも監視を継続し、出口で復帰できるようにする。
     if (error.code !== 1 && driveState === "tracking") {
@@ -947,10 +1005,10 @@ function handlePositionError(error) {
     if (displayedMatch || referenceMatch) {
         clearPositionWatch();
         statusEl.className = "is-error";
-        statusEl.textContent = `${messages[error.code] || "位置情報を取得できませんでした。"} 参考位置は引き続き閲覧できます。`;
+        statusEl.textContent = messages[error.code] || "測位エラー";
         return;
     }
-    endWithError(messages[error.code] || "位置情報を取得できませんでした。");
+    endWithError(messages[error.code] || "測位エラー");
 }
 
 function stopDriveMode({ message, returnToViewer = false } = {}) {
@@ -963,12 +1021,15 @@ function stopDriveMode({ message, returnToViewer = false } = {}) {
         return;
     }
     statusEl.className = "is-error";
-    statusEl.textContent = message || "走行モードを終了しました。";
+    // APIの任意長エラーはフッターへ流し込まず、詳細通知に分離する。
+    statusEl.textContent = message ? "走行モード停止" : "走行終了";
+    if (message) { statusEl.title = message; showRouteChange(message); }
     stopButton.textContent = "viewerへ戻る";
     stopButton.onclick = () => stopDriveMode({ returnToViewer: true });
 }
 
 function clearPositionWatch() {
+    publisher.stop(); sharedFix = null; sharingWanted = false;
     if (watchId != null) navigator.geolocation.clearWatch(watchId);
     watchId = null;
     clearTimeout(apiTimer);
@@ -994,7 +1055,9 @@ function applyStoredTheme() {
     const dark = localStorage.getItem("kp-viewer-theme") === "dark";
     document.body.classList.toggle("dark-theme", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#152019" : "#00973a");
+    // ライト時はヘッダーと同じ緑。ダーク側の配色は従来を維持する。
+    document.documentElement.style.backgroundColor = dark ? "#151a17" : "";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#152019" : "#008b38");
 }
 
 async function fetchApi(path) {

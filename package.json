@@ -8,7 +8,7 @@
     "build": "node build-pages.mjs && node scripts/verify-public-build.mjs && node scripts/verify-static-links.mjs",
     "verify:js": "node scripts/verify-javascript-syntax.mjs",
     "verify:docs": "node scripts/verify-docs.mjs",
-    "test:unit": "node --test test/structure-identity.test.mjs test/annotation-files.test.mjs test/annotation-images.test.mjs test/editor-preview-import.test.mjs test/kp-input.test.mjs test/selection-url.test.mjs test/api-usage-guard.test.mjs test/annotation-service.test.mjs test/print-view.test.mjs"
+    "test:unit": "node --test test/structure-identity.test.mjs test/annotation-files.test.mjs test/annotation-images.test.mjs test/editor-preview-import.test.mjs test/kp-input.test.mjs test/selection-url.test.mjs test/api-usage-guard.test.mjs test/annotation-service.test.mjs test/print-view.test.mjs test/viewer-home.test.mjs test/drive-header.test.mjs test/live-locations.test.mjs test/live-location-client.test.mjs test/live-location-demo.test.mjs test/live-demo-admin.test.mjs test/public-documentation.test.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.7"

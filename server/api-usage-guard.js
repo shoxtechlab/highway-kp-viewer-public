@@ -1,5 +1,5 @@
 const DEFAULT_DAILY_LIMIT = 50_000;
-const GUARDED_PATH = /^\/api\/(?:route(?:\/|$)|position$|nearest$|batch\/(?:position|nearest)$)/;
+const GUARDED_PATH = /^\/api\/(?:route(?:\/|$)|position$|nearest$|batch\/(?:position|nearest)$|live-locations$)/;
 const PROTECTED_BATCH_PATH = /^\/api\/batch\/(?:position|nearest)$/;
 
 export function isRouteApiPath(pathname) {

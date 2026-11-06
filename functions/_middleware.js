@@ -11,6 +11,8 @@ import { requireAdmin } from "../server/annotation-service.js";
 
 export async function onRequest(context) {
   const pathname = new URL(context.request.url).pathname;
+  // 公開停止の削除要求は、日次上限に達しても受け付ける（認証は専用API側）。
+  if (pathname === "/api/live-locations" && context.request.method === "DELETE") return context.next();
   if (!isRouteApiPath(pathname)) return context.next();
 
   // Emergency circuit breaker. Set API_ENABLED=false in the Pages environment
