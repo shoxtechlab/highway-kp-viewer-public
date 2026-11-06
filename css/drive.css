@@ -138,8 +138,8 @@ body.dark-theme {
     --drive-text: #eef3ef;
     --drive-muted: #b8c5bd;
     --drive-road: #7f8b84;
-    /* ダーク時の上端配色は再設計せず、従来の暗い背景を維持する。 */
-    background: var(--drive-bg);
+    /* ステータスバー背面もテーマによらずヘッダーの緑に統一する。 */
+    background: var(--drive-green);
 }
 body.dark-theme .drive-readout { border-bottom-color: #465149; }
 body.dark-theme #drive-view-center { border-color: #465149; }

@@ -1055,9 +1055,9 @@ function applyStoredTheme() {
     const dark = localStorage.getItem("kp-viewer-theme") === "dark";
     document.body.classList.toggle("dark-theme", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
-    // ライト時はヘッダーと同じ緑。ダーク側の配色は従来を維持する。
-    document.documentElement.style.backgroundColor = dark ? "#151a17" : "";
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#152019" : "#008b38");
+    // 本文のダーク配色とは分離し、Safariの上端とヘッダーは常に緑にする。
+    document.documentElement.style.backgroundColor = "#008b38";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#008b38");
 }
 
 async function fetchApi(path) {
