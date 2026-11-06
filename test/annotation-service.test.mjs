@@ -24,6 +24,12 @@ test("shared annotation is normalized and bounded", () => {
   assert.equal(record.endKp, null);
   assert.equal(record.updatedAt, "2026-09-25T00:00:00.000Z");
 });
+
+test("roadside equipment types remain distinct", () => {
+  for (const type of ["TC", "ITS", "CCTV"]) {
+    assert.equal(normalizeAnnotation({ ...base, type }, { routeId: "e28" }).type, type.toLowerCase());
+  }
+});
 test("section end must follow its start", () => {
   assert.throws(() => normalizeAnnotation({ ...base, geometryType: "section", endKp: 10 }), /endKp/);
 });

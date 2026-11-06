@@ -6,7 +6,7 @@
         "color": "#009944",
         "portal": "national",
         "available": true,
-        "status": "線形・施設収録済み（要キャリブレーション）"
+        "status": "KPキャリブレーション・施設収録済み"
     },
     {
         "id": "c4",
@@ -51,7 +51,7 @@
         "color": "#f58220",
         "portal": "national",
         "available": true,
-        "status": "線形・施設収録済み（要キャリブレーション）"
+        "status": "KPキャリブレーション・施設収録済み"
     },
     {
         "id": "e1a-shin-meishin",
@@ -150,7 +150,7 @@
         "color": "#009944",
         "portal": "national",
         "available": true,
-        "status": "線形収録済み（要キャリブレーション）"
+        "status": "KPキャリブレーション・施設収録済み"
     },
     {
         "id": "e83",
@@ -159,7 +159,7 @@
         "color": "#009944",
         "portal": "national",
         "available": true,
-        "status": "線形収録済み（要キャリブレーション）"
+        "status": "KPキャリブレーション・施設収録済み"
     },
     {
         "id": "e89-daini-keihan",
@@ -168,7 +168,7 @@
         "color": "#0068b7",
         "portal": "national",
         "available": true,
-        "status": "線形収録済み（要キャリブレーション）"
+        "status": "KPキャリブレーション・施設収録済み"
     },
     {
         "id": "e4",

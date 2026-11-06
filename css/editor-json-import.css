@@ -1,0 +1,53 @@
+.editor-saved-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.editor-edit-state { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border: 1px solid #a9bbb0; border-radius: 8px; }
+.editor-edit-state[hidden] { display: none; }
+.editor-edit-state strong { font-size: 13px; overflow-wrap: anywhere; }
+.editor-cancel-edit { flex-shrink: 0; border: 0; background: transparent; color: #087f3e; font: inherit; font-size: 12px; text-decoration: underline; }
+.editor-save-status { margin: 0; font-size: 12px; color: #087f3e; }
+.editor-save-status:empty { display: none; }
+.editor-submit:disabled { opacity: .6; cursor: wait; }
+.dark-theme .editor-save-status, .dark-theme .editor-cancel-edit { color: #a7e8bc; }
+
+.editor-json-import {
+    min-height: 32px;
+    padding: 5px 9px;
+    border: 1px solid #a9bbb0;
+    border-radius: 7px;
+    background: #fff;
+    color: #087f3e;
+    font: 700 11px/1.2 "Yu Gothic UI", "Meiryo", sans-serif;
+}
+
+.editor-json-import:hover { background: #edf6f0; }
+.editor-json-status {
+    min-height: 15px;
+    margin: 0;
+    color: #526159;
+    font-size: 10px;
+    line-height: 1.45;
+}
+.editor-json-status:empty { display: none; }
+.editor-json-status.is-error { color: #b42318; }
+.editor-file-actions, .editor-file-transfer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.editor-file-actions { justify-content: space-between; }
+.editor-file-transfer { margin-left: auto; }
+.editor-file-hint { margin: 3px 0 0; font-size: 11px; color: #526159; }
+.editor-export-format { min-height: 32px; border: 1px solid #a9bbb0; border-radius: 7px; padding: 4px; color: #087f3e; background: #fff; font: inherit; font-size: 12px; }
+.editor-delete-all { color: #b42318; border-color: #dab4b0; }
+.dark-theme .editor-export-format { background: #242e28; color: #a7e8bc; border-color: #5c6a61; }
+.dark-theme .editor-file-hint { color: #b9c4bd; }
+.dark-theme .editor-delete-all { color: #ffaaa3; }
+.dark-theme .editor-json-import {
+    border-color: #5c6a61;
+    background: #242e28;
+    color: #a7e8bc;
+}
+.dark-theme .editor-json-import:hover { background: #303a33; }
+.dark-theme .editor-json-status { color: #b9c4bd; }
+.dark-theme .editor-json-status.is-error { color: #ffaaa3; }

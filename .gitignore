@@ -1,5 +1,8 @@
 .history/
-tree.txt
 node_modules/
 dist/
 .compiled-route-data/
+private-notes/
+.env
+.env.*
+.dev.vars

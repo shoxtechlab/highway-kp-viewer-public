@@ -5,8 +5,11 @@ import { writeCompiledRoadSources } from "./lib/roadSourceCompiler.mjs";
 
 const projectRoot = process.cwd();
 const outputDir = join(projectRoot, "dist");
-const includePrivateRouteData = process.env.BUILD_PUBLIC_ROUTE_DATA !== "false"
-  && !process.argv.includes("--exclude-private-route-data");
+// Public-safe output is the default. Private route geometry must only be
+// included by an explicit local opt-in; this prevents a generic CI `build`
+// command from publishing road.json or route.geojson by accident.
+const includePrivateRouteData = process.env.BUILD_PRIVATE_ROUTE_DATA === "true"
+  || process.argv.includes("--include-private-route-data");
 
 // Validate and normalize all cross-file references before publishing anything.
 // The returned compatibility model is intentionally not used by the browser yet.
@@ -61,6 +64,16 @@ for (const entry of publicEntries) {
       );
     }
   });
+}
+
+// These converters are intentionally published as unlinked utilities.
+// Copy only the allowlisted directories: other tools contain private assets.
+for (const toolName of ["kp-converter", "annotation-converter"]) {
+  await cp(
+    join(projectRoot, "tools", toolName),
+    join(outputDir, "tools", toolName),
+    { recursive: true }
+  );
 }
 
 // ICランプ図はベータ公開対象だけを明示的に配布する。

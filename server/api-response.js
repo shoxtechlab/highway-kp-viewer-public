@@ -15,9 +15,22 @@ export async function apiHandler(action) {
     return jsonResponse(await action());
   } catch (error) {
     console.error(error);
+    const hasPublicStatus = Number.isInteger(error?.status);
+    const status = hasPublicStatus ? error.status : 500;
     return jsonResponse(
-      { error: error.message || "Internal server error." },
-      error.status || 500
+      { error: hasPublicStatus ? (error.message || "Request failed.") : "Internal server error." },
+      status
     );
   }
+}
+
+export async function privateApiHandler(action) {
+  const response = await apiHandler(action);
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", "no-store");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
 }

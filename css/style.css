@@ -311,6 +311,53 @@ svg {
 #mobile-menu-toggle,
 #mobile-overflow-menu { display: none; }
 
+.print-view-open {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 40px;
+    padding: 7px 9px;
+    border: 0;
+    border-top: 1px solid #dfe5e1;
+    background: transparent;
+    color: inherit;
+    font: 700 13px/1.2 sans-serif;
+    text-align: left;
+    cursor: pointer;
+}
+.print-view-open:hover { background: #edf3ef; }
+.print-view-open .ui-icon { width: 20px; height: 20px; }
+.dark-theme .print-view-open { border-color: #4b5850; }
+.dark-theme .print-view-open:hover { background: #303a33; }
+.print-view-dialog {
+    width: min(430px, calc(100vw - 28px));
+    padding: 0;
+    border: 1px solid #c7d2cb;
+    border-radius: 18px;
+    color: #203027;
+    background: #fff;
+    box-shadow: 0 20px 60px #0005;
+}
+.print-view-dialog::backdrop { background: #11201999; backdrop-filter: blur(3px); }
+.print-view-form { padding: 22px; }
+.print-view-heading p { margin: 0 0 3px; color: #087f3e; font: 800 11px/1.2 system-ui,sans-serif; letter-spacing: .13em; }
+.print-view-heading h2 { margin: 0; font: 800 24px/1.25 system-ui,sans-serif; }
+.print-view-note { margin: 12px 0; color: #536158; font: 600 13px/1.55 system-ui,sans-serif; }
+.print-view-system { margin: 14px 0 7px; font: 800 13px/1.4 system-ui,sans-serif; }
+.print-view-range { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 9px; }
+.print-view-range label { display: grid; gap: 5px; font: 750 12px/1.2 system-ui,sans-serif; }
+.print-view-range input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid #9eaaa2; border-radius: 9px; font: 750 16px/1 system-ui,sans-serif; }
+.print-view-range > span { padding-bottom: 13px; }
+.print-view-error { min-height: 18px; margin: 7px 0; color: #b42318; font: 700 12px/1.4 system-ui,sans-serif; }
+.print-view-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.print-view-actions button { min-height: 42px; padding: 8px 14px; border: 1px solid #aab5ae; border-radius: 9px; background: #fff; color: #26342c; font: 750 13px/1 system-ui,sans-serif; }
+.print-view-actions .is-primary { border-color: #087f3e; background: #087f3e; color: #fff; }
+.dark-theme .print-view-dialog { color: #edf3ef; background: #222a25; border-color: #647168; }
+.dark-theme .print-view-note { color: #b9c4bc; }
+.dark-theme .print-view-range input,.dark-theme .print-view-actions button { color: #edf3ef; background: #18201b; border-color: #647168; }
+.dark-theme .print-view-actions .is-primary { background: #079447; border-color: #079447; }
+
 /* PCでも表示設定をケバブメニューに集約する。 */
 @media (min-width: 800px) {
     #theme-toggle { display: none; }
@@ -652,6 +699,23 @@ body.dark-theme {
 .facility,
 .structure-label {
     cursor: pointer;
+}
+
+#app > svg .facility[role="button"]:focus-visible,
+#app > svg .structure-label[role="button"]:focus-visible {
+    outline: none;
+}
+
+#app > svg .facility[role="button"]:focus-visible > rect,
+#app > svg .structure-label[role="button"]:focus-visible > rect {
+    stroke: #f5b700 !important;
+    stroke-width: 4px !important;
+}
+
+#app > svg .facility.is-selected > rect,
+#app > svg .structure-label.is-selected > rect {
+    stroke: #d92d20 !important;
+    stroke-width: 1px !important;
 }
 
 #mini-map {
@@ -1154,3 +1218,25 @@ body.mini-map-resizing {
     background: #008d38;
     color: #ffffff;
 }
+
+.structure-details {
+    position: fixed;
+    z-index: 2200;
+    width: min(260px, calc(100vw - 16px));
+    padding: 14px 16px;
+    border: 1px solid #b9ccc0;
+    border-radius: 14px;
+    background: #fff;
+    color: #17291e;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .2);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.structure-details[hidden] { display: none; }
+.structure-details strong { font-size: 17px; }
+.structure-details p { margin: 3px 0 10px; color: #526159; }
+.structure-details dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 18px; margin: 0; }
+.structure-details dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+body.dark-theme .structure-details { background: #1e2b23; color: #edf5ef; border-color: #587361; }
+body.dark-theme .structure-details p { color: #bed0c3; }
+@media print { .structure-details { display: none !important; } }

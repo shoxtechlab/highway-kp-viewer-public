@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { createAppServer, handleApi } from "../local-api-server.mjs";
 import { createRouteService } from "../server/route-service.js";
@@ -92,13 +93,19 @@ test("route endpoint returns road metadata and coordinate coverage", async () =>
   assert.equal("features" in result, false);
 });
 
-// Route IDs are not E-number-specific: C4 uses the same public API contract.
-for (const routeId of ["c4", "e1-meishin", "e1a", "e2-sanyo", "e2a-chugoku", "e18", "e19", "e28", "e30", "e76", "e93-daini-shinmei"]) {
+// Keep every route in the registry on the same API contract. New routes are
+// covered automatically instead of requiring a second hand-maintained list.
+const registeredRoutes = JSON.parse(
+  await readFile(new URL("../data/routes.json", import.meta.url), "utf8")
+);
+for (const { id: routeId } of registeredRoutes.filter(route => route.available !== false)) {
   test(`${routeId} supports route, position, and nearest APIs`, async () => {
     const route = await handleApi(new URL(`http://local/api/route/${routeId}`));
     for (const direction of ["up", "down"]) {
       const range = route.coordinateCoverage[direction];
-      const kp = (range.start + range.end) / 2;
+      assert.ok(range, `${routeId}/${direction} has no coordinate coverage`);
+      const continuousRange = range.ranges?.[0] || range;
+      const kp = (continuousRange.start + continuousRange.end) / 2;
       const position = await handleApi(new URL(
         `http://local/api/position?route=${routeId}&direction=${direction}&kp=${kp}`
       ));
@@ -184,6 +191,40 @@ test("nearest uses travel heading to distinguish up and down", async () => {
   assert.equal(westbound.direction, "up");
   assert.equal(eastbound.directionMethod, "position-and-heading");
   assert.equal(eastbound.ambiguous, false);
+});
+
+test("API never exposes a negative KP at an extended route origin", async () => {
+  const road = { id: "extended-origin", name: "Extended origin" };
+  const geometry = JSON.stringify({
+    type: "FeatureCollection",
+    features: ["down", "up"].map((name, offset) => ({
+      type: "Feature",
+      properties: { name, chainage_m: [-100, 900] },
+      geometry: {
+        type: "LineString",
+        coordinates: [[139, 36 + offset * 0.0001], [139.01, 36 + offset * 0.0001]]
+      }
+    }))
+  });
+  const service = createRouteService(async (_routeId, fileName) =>
+    fileName === "road.json" ? JSON.stringify(road) : geometry
+  );
+
+  const route = await service.getRoute("extended-origin");
+  assert.equal(route.coordinateCoverage.down.start, 0);
+  assert.equal(route.coordinateCoverage.up.start, 0);
+
+  const nearest = await service.getNearest({
+    routeId: "extended-origin", lat: 36, lon: 139, preferredDirection: "down"
+  });
+  assert.equal(nearest.kp, 0);
+  assert.equal(nearest.localKp, 0);
+  assert.equal(nearest.routeKp, 0);
+
+  await assert.rejects(
+    () => service.getPosition({ routeId: "extended-origin", direction: "down", kp: -0.1 }),
+    error => error.status === 400
+  );
 });
 
 test("nearest can discover a route when route is omitted", async () => {

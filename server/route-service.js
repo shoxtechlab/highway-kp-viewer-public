@@ -47,6 +47,7 @@ export function createRouteService(readRouteFile, options = {}) {
       throw apiError(400, "Invalid direction.");
     }
     const numericKp = finiteNumber(kp, "kp");
+    if (numericKp < 0) throw apiError(400, "KP must not be negative.");
     const { road, indexes } = await loadRoute(routeId);
     const selection = resolvePositionSelection(road, indexes, numericKp, sectionId);
     const position = kpToStreetView(selection.indexes[direction], selection.localKp, direction);
@@ -122,14 +123,17 @@ export function createRouteService(readRouteFile, options = {}) {
     const selected = matches.sort((a, b) => a.match.distanceM - b.match.distanceM)[0];
     const match = selected?.match;
     if (!match) throw apiError(422, "Position could not be matched.");
-    const routeKp = selected.section ? localToRouteKp(selected.section, match.kp) : match.kp;
+    // キャリブレーション用に0KPより外側へ延長した線形ではchainageが負になり得る。
+    // これは内部的な線形表現に限り、公開APIではKPを必ず0以上に正規化する。
+    const localKp = nonNegativeKp(match.kp);
+    const routeKp = nonNegativeKp(selected.section ? localToRouteKp(selected.section, localKp) : localKp);
     return {
       route: routeId,
       section: selected.section?.id || null,
       direction: match.direction,
       directionLabel: resolveDirectionLabel(road, match.direction),
       kp: routeKp,
-      localKp: match.kp,
+      localKp,
       routeKp,
       distanceM: match.distanceM,
       snappedLat: match.snappedLat,
@@ -263,13 +267,20 @@ function buildDirectionIndexes(geoData, required) {
 function coverageForIndexes(indexes) {
   return Object.fromEntries(["up", "down"].map(direction => {
     const index = indexes[direction] || [];
-    return [direction, index.length ? { start: index[0].kp, end: index.at(-1).kp } : null];
+    return [direction, index.length ? {
+      start: nonNegativeKp(index[0].kp),
+      end: nonNegativeKp(index.at(-1).kp)
+    } : null];
   }));
 }
 
 function localToRouteKp(section, localKp) {
   if (![section.route_start_km, section.local_start_kp, section.kp_direction].every(Number.isFinite)) return null;
   return section.route_start_km + (localKp - section.local_start_kp) / section.kp_direction;
+}
+
+function nonNegativeKp(value) {
+  return Number.isFinite(value) ? Math.max(0, value) : value;
 }
 
 function routeToLocalKp(section, routeKp) {

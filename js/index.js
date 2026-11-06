@@ -3,6 +3,12 @@ import { initTheme } from "./theme.js";
 
 initTheme();
 
+async function fetchJson(path) {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`Failed to load ${path}: HTTP ${response.status}`);
+    return response.json();
+}
+
 async function main() {
 
     const routesSrc = document.body.dataset.routesSrc || "./data/routes.json";
@@ -10,8 +16,8 @@ async function main() {
     const viewerBase = document.body.dataset.viewerBase || "viewer.html";
 
     const [routes, offices] = await Promise.all([
-        fetch(routesSrc).then(r => r.json()),
-        officesSrc ? fetch(officesSrc).then(r => r.json()) : []
+        fetchJson(routesSrc),
+        officesSrc ? fetchJson(officesSrc) : []
     ]);
 
     const container = document.getElementById("route-list");
@@ -68,13 +74,36 @@ function renderLinks(container, items, viewerBase) {
             : "";
         const routeId = item.route || item.id;
         link.href = item.href || `${viewerBase}?route=${routeId}${scopeParam}${portalParam}`;
-        link.textContent = item.name;
-
-        link.style.display = "block";
-        link.style.margin = "8px 0";
+        link.className = "route-entry";
+        const match = String(routeId || "").toUpperCase().match(/^[EC]\d+[A-Z]*/);
+        if (match) {
+            const badge = document.createElement("span");
+            badge.className = "route-code";
+            badge.textContent = match[0];
+            link.appendChild(badge);
+        }
+        const label = document.createElement("span");
+        label.className = "route-entry-name";
+        label.textContent = match
+            ? String(item.name).replace(new RegExp(`^${match[0]}\\s*`, "i"), "")
+            : item.name;
+        link.appendChild(label);
+        const arrow = document.createElement("span");
+        arrow.className = "route-entry-arrow";
+        arrow.setAttribute("aria-hidden", "true");
+        arrow.textContent = "›";
+        link.appendChild(arrow);
 
         container.appendChild(link);
     });
 }
 
-main();
+main().catch(error => {
+    console.error(error);
+    const container = document.getElementById("route-list");
+    if (!container) return;
+    const message = document.createElement("p");
+    message.className = "route-unavailable";
+    message.textContent = "路線一覧を読み込めませんでした。通信状態を確認して再読み込みしてください。";
+    container.replaceChildren(message);
+});

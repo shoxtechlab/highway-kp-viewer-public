@@ -1,5 +1,5 @@
 const ROUTE_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
-const TYPES = new Set(["pa", "sa", "ic", "jct", "tunnel", "bridge", "bus-stop", "electrical", "incident", "construction", "other"]);
+const TYPES = new Set(["pa", "sa", "ic", "jct", "tunnel", "bridge", "bus-stop", "electrical", "incident", "construction", "tc", "its", "cctv", "other"]);
 const DIRECTIONS = new Set(["up", "down", "both"]);
 const GEOMETRIES = new Set(["point", "section"]);
 
@@ -39,7 +39,8 @@ export function normalizeAnnotation(input, { routeId, now = new Date().toISOStri
   if (geometryType === "section" && (!Number.isFinite(endKp) || endKp <= startKp || endKp > 2000)) {
     throw apiError(400, "endKp is invalid.");
   }
-  const type = TYPES.has(input?.type) ? input.type : "other";
+  const requestedType = String(input?.type || "").toLowerCase();
+  const type = TYPES.has(requestedType) ? requestedType : "other";
   const direction = DIRECTIONS.has(input?.direction) ? input.direction : "both";
   const createdAt = isoDate(input?.createdAt, "createdAt") || now;
   return {

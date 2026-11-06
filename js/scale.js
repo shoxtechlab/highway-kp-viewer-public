@@ -1,5 +1,6 @@
 import { LAYOUT } from "./config.js";
 import { createSVG, kpToY } from "./utils.js";
+import { axisTickStep, axisTicks } from "./axisTicks.js";
 
 /**
  * KP目盛り描画
@@ -143,11 +144,9 @@ function drawSingleScale(
     { emphasized = false, headingY = 18 } = {}
 ) {
 
-    const step = 5; // 5km刻み（後で可変化）
+    const step = axisTickStep(toRouteKp(startKP + 1) - toRouteKp(startKP));
 
-    const firstKP = Math.ceil(startKP / step) * step;
-
-    for (let kp = firstKP; kp <= endKP; kp += step) {
+    for (const kp of axisTicks(startKP, endKP, step)) {
 
         const y = kpToY(toRouteKp(kp));
 
@@ -184,7 +183,7 @@ function drawSingleScale(
             "font-weight": emphasized ? 700 : 400
         });
 
-        text.textContent = `${kp} km`;
+        text.textContent = `${kp} KP`;
 
         g.appendChild(text);
 

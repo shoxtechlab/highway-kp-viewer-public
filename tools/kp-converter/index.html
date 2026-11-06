@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00973a">
+  <title>KP一括変換</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span>KP Viewer</span>
+      <strong>一括変換</strong>
+    </div>
+    <button id="theme-toggle" class="icon-button" type="button" aria-label="ダークモードに切り替え" title="ダークモードに切り替え">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="eyebrow">BATCH CONVERTER</p>
+      <h1>KP・緯度経度 一括変換</h1>
+      <p>CSVを読み込み、複数地点をまとめて変換します。入力データは変換処理以外には保存しません。</p>
+    </section>
+
+    <section class="panel mode-panel" aria-labelledby="mode-heading">
+      <div class="section-heading">
+        <div><span>01</span><h2 id="mode-heading">変換方向</h2></div>
+      </div>
+      <div class="mode-tabs" role="radiogroup" aria-label="変換方向">
+        <label>
+          <input type="radio" name="mode" value="position" checked>
+          <span><b>KP → 緯度経度</b><small>路線・方向・KPから座標を取得</small></span>
+        </label>
+        <label>
+          <input type="radio" name="mode" value="nearest">
+          <span><b>緯度経度 → KP</b><small>座標から路線・方向・KPを判定</small></span>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="input-heading">
+      <div class="section-heading">
+        <div><span>02</span><h2 id="input-heading">CSV入力</h2></div>
+        <button id="sample-button" class="text-button" type="button">サンプルを入力</button>
+      </div>
+      <label id="drop-zone" class="drop-zone">
+        <input id="file-input" type="file" accept=".csv,text/csv">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+        <b>CSVを選択またはドロップ</b>
+        <small>UTF-8 / 1回最大200行</small>
+      </label>
+      <div class="or"><span>または直接貼り付け</span></div>
+      <textarea id="csv-input" rows="9" spellcheck="false" aria-label="CSV入力"></textarea>
+      <p id="input-help" class="help"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="preview-heading">
+      <div class="section-heading">
+        <div><span>03</span><h2 id="preview-heading">入力確認</h2></div>
+        <output id="row-count" class="count">0行</output>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead id="preview-head"></thead>
+          <tbody id="preview-body"><tr><td class="empty">CSVを入力すると先頭5行を表示します。</td></tr></tbody>
+        </table>
+      </div>
+      <p id="validation-message" class="message" aria-live="polite"></p>
+      <button id="convert-button" class="primary-button" type="button" disabled>変換を実行</button>
+    </section>
+
+    <section id="result-panel" class="panel" aria-labelledby="result-heading" hidden>
+      <div class="section-heading">
+        <div><span>04</span><h2 id="result-heading">変換結果</h2></div>
+        <output id="result-summary" class="count"></output>
+      </div>
+      <div class="table-wrap"><table><thead id="result-head"></thead><tbody id="result-body"></tbody></table></div>
+      <button id="download-button" class="secondary-button" type="button">結果CSVをダウンロード</button>
+    </section>
+  </main>
+
+  <dialog id="key-dialog">
+    <form method="dialog">
+      <p class="eyebrow">ADMIN KEY</p>
+      <h2>管理者キーを入力</h2>
+      <p>キーはこのタブのメモリ内だけで保持し、保存しません。</p>
+      <label>管理者キー<input id="key-input" type="password" autocomplete="off" required></label>
+      <p id="key-error" class="message error" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="cancel-button">キャンセル</button>
+        <button id="key-submit" value="default" class="primary-button">変換を開始</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer>© 2026 shoxtechlab. All Rights Reserved.</footer>
+  <script src="./app.js" type="module"></script>
+</body>
+</html>

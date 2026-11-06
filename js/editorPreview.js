@@ -1,16 +1,20 @@
 import { getSvgPoint, kpToY, mouseYToKp } from "./utils.js";
+import { parseAnnotationCsv, exportAnnotationCsv } from "./annotationFiles.js";
 
 const TYPE_OPTIONS = [
-    ["pa", "PA", "#087f3e", "#ffffff"],
-    ["sa", "SA", "#087f3e", "#ffffff"],
-    ["ic", "IC・SIC", "#00973a", "#ffffff"],
-    ["jct", "JCT", "#00973a", "#ffffff"],
+    ["incident", "事象・事故", "#d92d20", "#fff1f0"],
+    ["construction", "工事・規制", "#d97706", "#fff7e6"],
+    ["tc", "TC", "#5b3fa3", "#f1edff"],
+    ["its", "ITS", "#007c91", "#e7f8fb"],
+    ["cctv", "CCTV", "#c0266d", "#fff0f6"],
+    ["electrical", "電気室", "#68756d", "#f1f4f2"],
+    ["bus-stop", "バスストップ", "#5967b2", "#eef0ff"],
     ["tunnel", "トンネル", "#3580b8", "#edf7ff"],
     ["bridge", "橋梁", "#d88925", "#fff7eb"],
-    ["bus-stop", "バスストップ", "#5967b2", "#eef0ff"],
-    ["electrical", "電気室", "#68756d", "#f1f4f2"],
-    ["incident", "事象・事故情報", "#d92d20", "#fff1f0"],
-    ["construction", "工事・規制", "#d97706", "#fff7e6"],
+    ["ic", "IC・SIC", "#00973a", "#ffffff"],
+    ["jct", "JCT", "#00973a", "#ffffff"],
+    ["sa", "SA", "#087f3e", "#ffffff"],
+    ["pa", "PA", "#087f3e", "#ffffff"],
     ["other", "その他", "#59636d", "#f2f4f5"]
 ];
 
@@ -58,6 +62,77 @@ async function writeRecord(record) {
     });
 }
 
+async function writeRecords(records) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, "readwrite");
+        const store = transaction.objectStore(STORE_NAME);
+        records.forEach(record => store.put(record));
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error("JSONの保存を中断しました。"));
+    });
+}
+
+export function normalizeLocalJsonImport(payload, routeId, { createId = () => crypto.randomUUID() } = {}) {
+    routeId = String(routeId || "").trim().toLowerCase();
+    const source = Array.isArray(payload) ? payload : payload?.records;
+    if (!Array.isArray(source)) throw new Error("JSONは配列、または records 配列を持つオブジェクトにしてください。");
+    if (!source.length) throw new Error("JSONに追加データがありません。");
+    if (source.length > 500) throw new Error("一度に読み込める追加データは500件までです。");
+
+    let skipped = 0;
+    const records = source.flatMap((input, index) => {
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+            throw new Error(`${index + 1}件目がオブジェクトではありません。`);
+        }
+        const inputRouteId = String(input.routeId || routeId).trim().toLowerCase();
+        if (inputRouteId !== routeId) {
+            skipped += 1;
+            return [];
+        }
+        const geometryType = input.geometryType === "section" ? "section" : "point";
+        const startKp = Number(input.startKp);
+        const endKp = geometryType === "section" ? Number(input.endKp) : null;
+        if (!Number.isFinite(startKp) || startKp < 0 || startKp > 2000) {
+            throw new Error(`${index + 1}件目の起点KPが不正です。`);
+        }
+        if (geometryType === "section" && (!Number.isFinite(endKp) || endKp <= startKp || endKp > 2000)) {
+            throw new Error(`${index + 1}件目の終点KPが不正です。`);
+        }
+        const name = String(input.name || "").trim();
+        if (!name || name.length > 60) throw new Error(`${index + 1}件目の名称が不正です。`);
+        const requestedType = String(input.type || "").toLowerCase();
+        const type = TYPE_OPTIONS.some(([value]) => value === requestedType) ? requestedType : "other";
+        const palette = TYPE_OPTIONS.find(([value]) => value === type) || TYPE_OPTIONS.at(-1);
+        const primary = /^#[0-9a-f]{6}$/i.test(input.colors?.primary || "") ? input.colors.primary : palette[2];
+        const secondary = /^#[0-9a-f]{6}$/i.test(input.colors?.secondary || "") ? input.colors.secondary : palette[3];
+        const direction = ["up", "down", "both"].includes(input.direction) ? input.direction : "both";
+        const createdAt = Number.isFinite(Date.parse(input.createdAt)) ? input.createdAt : new Date().toISOString();
+        const expiresAt = Number.isFinite(Date.parse(input.expiresAt)) ? input.expiresAt : null;
+        return [{
+            id: String(input.id || createId()),
+            schemaVersion: 1,
+            routeId,
+            kpSystemId: String(input.kpSystemId || "route"),
+            geometryType,
+            startKp,
+            endKp,
+            direction,
+            type,
+            name,
+            description: String(input.description || "").trim().slice(0, 240),
+            colors: { primary, secondary },
+            visibility: "private",
+            author: "",
+            createdAt,
+            expiresAt
+        }];
+    });
+    if (!records.length) throw new Error(`この路線（${routeId.toUpperCase()}）の追加データがありません。`);
+    return { records, skipped };
+}
+
 async function deleteRecord(id) {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
@@ -98,7 +173,7 @@ async function sharedRequest(path, options = {}) {
 export function initEditorPreview({ routeId, routeName, kpSystems, directionLabels, getCurrentKp, onRecordsChange }) {
     if (document.getElementById("editor-preview-open")) return;
 
-    document.head.insertAdjacentHTML("beforeend", '<link rel="stylesheet" href="/css/editor-preview.css"><link rel="stylesheet" href="/css/editor-item-actions.css">');
+    document.head.insertAdjacentHTML("beforeend", '<link rel="stylesheet" href="/css/editor-preview.css"><link rel="stylesheet" href="/css/editor-item-actions.css"><link rel="stylesheet" href="/css/editor-json-import.css">');
     const menu = document.getElementById("mobile-overflow-menu");
     if (!menu) return;
 
@@ -117,12 +192,13 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                     <button class="editor-close" type="button" aria-label="閉じる">×</button>
                 </header>
                 <form id="editor-preview-form">
+                    <div class="editor-edit-state" hidden><strong></strong><button class="editor-cancel-edit" type="button">編集をやめる</button></div>
                     <label class="editor-field"><span>路線</span><input value="${escapeHtml(routeName)}（${escapeHtml(routeId.toUpperCase())}）" readonly></label>
                     ${kpSystems.length > 1 ? `<label class="editor-field"><span>路線名・KP体系</span><select name="kpSystemId">${kpSystems.map(system => `<option value="${escapeHtml(system.id)}">${escapeHtml(system.name || system.label || system.id)}</option>`).join("")}</select></label>` : `<input type="hidden" name="kpSystemId" value="${escapeHtml(kpSystems[0]?.id || "route")}">`}
                     <fieldset class="editor-field"><legend>形状</legend><div class="editor-segments"><label><input type="radio" name="geometryType" value="point" checked><span>地点</span></label><label><input type="radio" name="geometryType" value="section"><span>区間</span></label></div></fieldset>
                     <div class="editor-kp-row">
-                        <label class="editor-field"><span>起点KP</span><div class="editor-kp"><input name="startKp" type="number" min="0" step="0.01" inputmode="decimal" required><b>KP</b></div></label>
-                        <label class="editor-field editor-end-kp" hidden><span>終点KP</span><div class="editor-kp"><input name="endKp" type="number" min="0" step="0.01" inputmode="decimal"><b>KP</b></div></label>
+                        <label class="editor-field"><span>起点KP</span><div class="editor-kp"><input name="startKp" type="number" min="0" step="any" inputmode="decimal" required><b>KP</b></div></label>
+                        <label class="editor-field editor-end-kp" hidden><span>終点KP</span><div class="editor-kp"><input name="endKp" type="number" min="0" step="any" inputmode="decimal"><b>KP</b></div></label>
                     </div>
                     <button class="editor-use-kp" type="button">現在の入力KPを反映</button>
                     <fieldset class="editor-field"><legend>方向</legend><div class="editor-segments editor-directions"><label><input type="radio" name="direction" value="up"><span>${escapeHtml(directionLabels.up)}</span></label><label><input type="radio" name="direction" value="down"><span>${escapeHtml(directionLabels.down)}</span></label><label><input type="radio" name="direction" value="both" checked><span>上下両方</span></label></div></fieldset>
@@ -135,8 +211,23 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                         <label class="editor-field"><span>表示範囲</span><select name="visibility"><option value="private" selected>この端末のみ</option><option value="public">共有・全員に表示</option></select></label>
                     </div>
                     <section class="editor-live-preview" aria-live="polite"><p>登録プレビュー</p><div class="editor-preview-chip"><i></i><span>名称を入力してください</span></div><small>この端末だけに保存します</small></section>
-                    <button class="editor-submit" type="submit">決定</button>
-                    <section class="editor-saved"><h3>この路線の追加データ</h3><div class="editor-saved-list"></div></section>
+                    <button class="editor-submit" type="submit">追加する</button>
+                    <p class="editor-save-status" role="status"></p>
+                    <section class="editor-saved">
+                        <div class="editor-saved-head"><h3>この路線の追加データ</h3></div>
+                        <div class="editor-file-actions">
+                            <button class="editor-json-import editor-delete-all" type="button">全削除</button>
+                            <div class="editor-file-transfer">
+                                <button class="editor-json-import" data-file-import type="button">ファイル読込</button>
+                                <select class="editor-export-format" aria-label="書き出し形式"><option value="json">JSON</option><option value="csv">CSV</option></select>
+                                <button class="editor-json-import editor-export" type="button">書き出し</button>
+                            </div>
+                        </div>
+                        <input class="editor-json-file" type="file" accept=".json,.csv,application/json,text/csv" hidden>
+                        <p class="editor-file-hint">読込：CSV・JSON（この端末に保存）／書出：この路線の追加データ</p>
+                        <p class="editor-json-status" aria-live="polite"></p>
+                        <div class="editor-saved-list"></div>
+                    </section>
                 </form>
             </aside>
         </div>`);
@@ -144,11 +235,31 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
     const layer = document.getElementById("editor-preview-layer");
     const form = document.getElementById("editor-preview-form");
     const openButton = document.getElementById("editor-preview-open");
+    const jsonFile = layer.querySelector(".editor-json-file");
+    const jsonStatus = layer.querySelector(".editor-json-status");
     let privateRecords = [];
     let sharedRecords = [];
     let records = [];
     let editingRecord = null;
     let preserveEditingExpiry = false;
+    let saving = false;
+    const saveStatus = layer.querySelector(".editor-save-status");
+    const editState = layer.querySelector(".editor-edit-state");
+    const resetEntry = () => {
+        editingRecord = null;
+        preserveEditingExpiry = false;
+        editState.hidden = true;
+        layer.querySelector(".editor-submit").textContent = "追加する";
+        for (const name of ["name", "description", "startKp", "endKp"]) form.elements[name].value = "";
+        form.elements.endKp.setCustomValidity("");
+        layer.querySelector(".editor-live-preview").classList.remove("is-confirmed");
+        updatePreview();
+    };
+    layer.querySelector(".editor-cancel-edit").addEventListener("click", () => {
+        if (saving) return;
+        resetEntry();
+        saveStatus.textContent = "編集をやめました。新しいデータを追加できます。";
+    });
     const hiddenTypes = new Set(JSON.parse(localStorage.getItem(`kp-user-layer-hidden:${routeId}`) || "[]"));
     const close = () => {
         layer.hidden = true;
@@ -181,7 +292,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
     const mergeLayers = () => {
         const merged = new Map(sharedRecords.map(record => [record.id, { ...record, visibility: "public" }]));
         for (const record of privateRecords) merged.set(record.id, { ...record, visibility: "private" });
-        records = [...merged.values()];
+        records = [...merged.values()].sort((a, b) => Number(a.startKp) - Number(b.startKp));
     };
     const notify = () => {
         mergeLayers();
@@ -194,7 +305,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
             list.innerHTML = '<p class="editor-empty">まだ追加されていません。</p>';
             return;
         }
-        list.innerHTML = records.map(record => `<article data-id="${escapeHtml(record.id)}" data-visibility="${record.visibility}"><i style="--item-color:${escapeHtml(record.colors.primary)}"></i><div><strong>${escapeHtml(record.name)}</strong><small>${record.visibility === "public" ? "共有" : "この端末のみ"} · ${escapeHtml(typeLabel(record.type))} · ${Number(record.startKp).toFixed(2)} KP${record.geometryType === "section" ? `〜${Number(record.endKp).toFixed(2)} KP` : ""}</small></div><div class="editor-item-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(record.name)}を編集">編集</button><button type="button" data-action="delete" aria-label="${escapeHtml(record.name)}を削除">削除</button></div></article>`).join("");
+        list.innerHTML = records.map(record => `<article data-id="${escapeHtml(record.id)}" data-visibility="${record.visibility}"><i style="--item-color:${escapeHtml(record.colors.primary)}"></i><div><strong>${escapeHtml(record.name)}</strong><small>${record.visibility === "public" ? "共有" : "この端末のみ"} · ${escapeHtml(typeLabel(record.type))} · ${Number(record.startKp)} KP${record.geometryType === "section" ? `〜${Number(record.endKp)} KP` : ""}</small></div><div class="editor-item-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(record.name)}を編集">編集</button><button type="button" data-action="delete" aria-label="${escapeHtml(record.name)}を削除">削除</button></div></article>`).join("");
         list.querySelectorAll("button").forEach(button => button.addEventListener("click", async () => {
             const article = button.closest("article");
             const record = records.find(item => item.id === article.dataset.id);
@@ -208,6 +319,9 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                     }
                 }
                 editingRecord = record;
+                editState.hidden = false;
+                editState.querySelector("strong").textContent = `編集中：${record.name}`;
+                saveStatus.textContent = "";
                 form.elements.kpSystemId.value = record.kpSystemId;
                 form.elements.geometryType.value = record.geometryType;
                 form.elements.startKp.value = record.startKp;
@@ -267,6 +381,78 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
         }));
     };
 
+    layer.querySelector("[data-file-import]").addEventListener("click", () => {
+        jsonFile.value = "";
+        jsonFile.click();
+    });
+    jsonFile.addEventListener("change", async () => {
+        const file = jsonFile.files?.[0];
+        if (!file) return;
+        jsonStatus.classList.remove("is-error");
+        jsonStatus.textContent = "ファイルを確認しています…";
+        try {
+            const text = await file.text();
+            const payload = /\.csv$/i.test(file.name) ? parseAnnotationCsv(text) : JSON.parse(text.replace(/^\uFEFF/, ""));
+            const imported = normalizeLocalJsonImport(payload, routeId);
+            await writeRecords(imported.records);
+            const importedIds = new Set(imported.records.map(record => record.id));
+            privateRecords = [
+                ...privateRecords.filter(record => !importedIds.has(record.id)),
+                ...imported.records
+            ];
+            mergeLayers();
+            renderSaved();
+            renderTypeFilters();
+            notify();
+            jsonStatus.textContent = `${imported.records.length}件をこの端末へ読み込みました${imported.skipped ? `（別路線 ${imported.skipped}件を除外）` : ""}。`;
+        } catch (error) {
+            jsonStatus.classList.add("is-error");
+            jsonStatus.textContent = error instanceof SyntaxError ? "JSONの形式が正しくありません。" : error.message;
+        }
+    });
+
+    layer.querySelector(".editor-export").addEventListener("click", () => {
+        if (!records.length) { jsonStatus.textContent = "書き出す追加データがありません。"; return; }
+        const format = layer.querySelector(".editor-export-format").value;
+        const content = format === "csv" ? exportAnnotationCsv(records)
+            : JSON.stringify({ schemaVersion: 1, records }, null, 2);
+        const url = URL.createObjectURL(new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${routeId}-annotations.${format}`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    layer.querySelector(".editor-delete-all").addEventListener("click", async () => {
+        const snapshot = [
+            ...sharedRecords.map(record => ({ ...record, visibility: "public" })),
+            ...privateRecords.map(record => ({ ...record, visibility: "private" }))
+        ];
+        if (!snapshot.length) return;
+        const publicCount = snapshot.filter(record => record.visibility === "public").length;
+        if (!window.confirm(`この路線の追加データ${snapshot.length}件をすべて削除しますか？\n共有${publicCount}件・この端末のみ${snapshot.length - publicCount}件。共有データの削除は全員に反映されます。`)) return;
+        try {
+            if (publicCount) await requestAdminKey();
+            for (const record of snapshot) {
+                if (record.visibility === "public") {
+                    await sharedRequest(`/api/annotations/${encodeURIComponent(record.id)}?route=${encodeURIComponent(routeId)}`, { method: "DELETE", admin: true });
+                    sharedRecords = sharedRecords.filter(item => item.id !== record.id);
+                } else {
+                    await deleteRecord(record.id);
+                    privateRecords = privateRecords.filter(item => item.id !== record.id);
+                }
+            }
+            resetEntry();
+            jsonStatus.classList.remove("is-error");
+            jsonStatus.textContent = `${snapshot.length}件を削除しました。`;
+        } catch (error) {
+            jsonStatus.classList.add("is-error");
+            jsonStatus.textContent = `削除を中断しました：${error.message}`;
+        } finally {
+            mergeLayers(); renderSaved(); renderTypeFilters(); notify();
+        }
+    });
+
     openButton.addEventListener("click", open);
     layer.querySelector(".editor-backdrop").addEventListener("click", close);
     layer.querySelector(".editor-close").addEventListener("click", close);
@@ -295,9 +481,17 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
         const current = getCurrentKp();
         if (Number.isFinite(current.kp)) form.elements.startKp.value = current.kp;
         if (form.elements.kpSystemId && current.kpSystemId) form.elements.kpSystemId.value = current.kpSystemId;
+        if (["up", "down", "both"].includes(current.direction)) {
+            form.elements.direction.value = current.direction;
+        }
     });
     form.addEventListener("submit", async event => {
         event.preventDefault();
+        if (saving) return;
+        saving = true;
+        layer.querySelector(".editor-submit").disabled = true;
+        const wasEditing = Boolean(editingRecord);
+        saveStatus.textContent = "";
         try {
         updatePreview();
         const data = new FormData(form);
@@ -353,18 +547,18 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                 sharedRecords = sharedRecords.filter(item => item.id !== record.id);
             }
         }
-        editingRecord = null;
-        preserveEditingExpiry = false;
+        resetEntry();
         mergeLayers();
         renderSaved();
         renderTypeFilters();
         notify();
-        layer.querySelector(".editor-live-preview").classList.add("is-confirmed");
-        layer.querySelector(".editor-live-preview small").textContent = visibility === "public" ? "共有データへ保存しました" : "この端末へ保存しました";
-        layer.querySelector(".editor-submit").textContent = "もう一件追加";
+        saveStatus.textContent = `${wasEditing ? "変更を保存しました" : "追加しました"}（${visibility === "public" ? "共有データ" : "この端末のみ"}）。`;
         } catch (error) {
             layer.querySelector(".editor-live-preview").classList.remove("is-confirmed");
             layer.querySelector(".editor-live-preview small").textContent = error.message;
+        } finally {
+            saving = false;
+            layer.querySelector(".editor-submit").disabled = false;
         }
     });
 
@@ -389,7 +583,12 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
     });
 }
 
-export function renderEditorRecords(svg, records, { hiddenTypes = new Set(), toRouteKp = value => value, onSelect } = {}) {
+export function renderEditorRecords(svg, records, {
+    hiddenTypes = new Set(),
+    toRouteKp = value => value,
+    viewRange = null,
+    onSelect
+} = {}) {
     if (!svg || !records?.length) return;
     const root = document.createElementNS(SVG_NS, "g");
     root.setAttribute("class", "user-layer-overlay");
@@ -397,6 +596,43 @@ export function renderEditorRecords(svg, records, { hiddenTypes = new Set(), toR
     const upX = v2 ? 350 : 330;
     const downX = v2 ? 424 : 450;
     const railWidth = v2 ? 26 : 30;
+    const svgHeight = svg.viewBox.baseVal.height;
+    const occupied = { up: [], down: [] };
+    svg.querySelectorAll(".facility[data-direction], .structure-label[data-direction]").forEach(label => {
+        const direction = label.dataset.direction;
+        if (!occupied[direction]) return;
+        const range = readSvgLabelVerticalRange(label);
+        if (range) occupied[direction].push(range);
+    });
+    const labelCandidates = [];
+    for (const record of records) {
+        if (hiddenTypes.has(record.type)) continue;
+        const start = toRouteKp(Number(record.startKp), record.kpSystemId);
+        const end = record.geometryType === "section" ? toRouteKp(Number(record.endKp), record.kpSystemId) : start;
+        if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+        const rangeStart = Math.min(start, end);
+        const rangeEnd = Math.max(start, end);
+        const viewStart = Number(viewRange?.start);
+        const viewEnd = Number(viewRange?.end);
+        const hasViewRange = Number.isFinite(viewStart) && Number.isFinite(viewEnd);
+        if (hasViewRange && (rangeEnd < viewStart || rangeStart > viewEnd)) continue;
+        const visibleStart = hasViewRange ? Math.max(rangeStart, viewStart) : rangeStart;
+        const visibleEnd = hasViewRange ? Math.min(rangeEnd, viewEnd) : rangeEnd;
+        const yStart = kpToY(visibleStart);
+        const yEnd = kpToY(visibleEnd);
+        if (!Number.isFinite(yStart) || !Number.isFinite(yEnd)) continue;
+        labelCandidates.push({
+            record,
+            side: record.direction === "up" ? "up" : "down",
+            desiredY: Math.min(yStart, yEnd) - 16
+        });
+    }
+    const labelPositions = new Map();
+    for (const side of ["up", "down"]) {
+        const candidates = labelCandidates.filter(candidate => candidate.side === side);
+        const positions = layoutOrderedUserLabels(candidates, occupied[side], svgHeight);
+        positions.forEach(({ candidate, y }) => labelPositions.set(candidate.record, y));
+    }
     const add = (parent, tag, attrs, text) => {
         const node = document.createElementNS(SVG_NS, tag);
         Object.entries(attrs).forEach(([name, value]) => node.setAttribute(name, value));
@@ -409,8 +645,19 @@ export function renderEditorRecords(svg, records, { hiddenTypes = new Set(), toR
         const start = toRouteKp(Number(record.startKp), record.kpSystemId);
         const end = record.geometryType === "section" ? toRouteKp(Number(record.endKp), record.kpSystemId) : start;
         if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
-        const yStart = kpToY(start);
-        const yEnd = kpToY(end);
+        const rangeStart = Math.min(start, end);
+        const rangeEnd = Math.max(start, end);
+        const viewStart = Number(viewRange?.start);
+        const viewEnd = Number(viewRange?.end);
+        const hasViewRange = Number.isFinite(viewStart) && Number.isFinite(viewEnd);
+
+        // 路線全体に紐づく追加データでも、事務所などの表示範囲外なら描画しない。
+        // 区間が表示範囲と一部だけ重なる場合は、見えている部分だけに切り詰める。
+        if (hasViewRange && (rangeEnd < viewStart || rangeStart > viewEnd)) continue;
+        const visibleStart = hasViewRange ? Math.max(rangeStart, viewStart) : rangeStart;
+        const visibleEnd = hasViewRange ? Math.min(rangeEnd, viewEnd) : rangeEnd;
+        const yStart = kpToY(visibleStart);
+        const yEnd = kpToY(visibleEnd);
         if (!Number.isFinite(yStart) || !Number.isFinite(yEnd)) continue;
         const item = add(root, "g", {
             class: "user-layer-item",
@@ -425,7 +672,8 @@ export function renderEditorRecords(svg, records, { hiddenTypes = new Set(), toR
             for (const x of xs) add(item, "circle", { cx: x + railWidth / 2, cy: yStart, r: 8, fill: record.colors.secondary, stroke: record.colors.primary, "stroke-width": 3, "stroke-dasharray": "3 2" });
         }
         const labelX = record.direction === "up" ? 72 : 478;
-        const labelY = Math.min(yStart, yEnd) - 16;
+        // KP順を保った一括配置により、近接する追加ラベル同士のコネクタ交差を防ぐ。
+        const labelY = labelPositions.get(record) ?? Math.min(yStart, yEnd) - 16;
         const labelEdge = record.direction === "up" ? labelX + 250 : labelX;
         for (const x of xs) {
             const roadEdge = record.direction === "up" ? x : x + railWidth;
@@ -447,15 +695,106 @@ export function renderEditorRecords(svg, records, { hiddenTypes = new Set(), toR
         item.addEventListener("click", event => {
             event.stopPropagation();
             const clickedKp = mouseYToKp(getSvgPoint(event, svg).y);
-            select(record.geometryType === "section" ? Math.max(Math.min(start,end), Math.min(Math.max(start,end), clickedKp)) : start);
+            select(record.geometryType === "section" ? Math.max(visibleStart, Math.min(visibleEnd, clickedKp)) : start);
         });
         item.addEventListener("keydown", event => {
             if (event.key !== "Enter" && event.key !== " ") return;
             event.preventDefault();
-            select(record.geometryType === "section" ? (start + end) / 2 : start);
+            select(record.geometryType === "section" ? (visibleStart + visibleEnd) / 2 : start);
         });
     }
     // 選択位置の赤いフォーカスマーカーは、常にユーザー追加レイヤーより上へ描く。
     const focusLayer = svg.querySelector(".v2-focus-layer, #marker-layer");
     svg.insertBefore(root, focusLayer || null);
+}
+
+/**
+ * 通常表示ではgetBBox()を使い、印刷用の未接続SVGでは子rectの属性へフォールバックする。
+ * 未接続SVGのgetBBox()は例外または高さ0になるブラウザがある。
+ */
+export function readSvgLabelVerticalRange(label) {
+    try {
+        const box = label.getBBox();
+        if (Number.isFinite(box?.y) && Number.isFinite(box?.height) && box.height > 0) {
+            return [box.y - 3, box.y + box.height + 3];
+        }
+    } catch {
+        // 下の属性値フォールバックを使う。
+    }
+    const rect = label.querySelector?.("rect");
+    const y = Number(rect?.getAttribute?.("y"));
+    const height = Number(rect?.getAttribute?.("height"));
+    if (!Number.isFinite(y) || !Number.isFinite(height) || height <= 0) return null;
+    return [y - 3, y + height + 3];
+}
+
+/**
+ * 追加ラベルを接続元の順番どおりに配置する。
+ * ラベルを単純に空き位置へ置くと接続元とラベルの上下順が逆転し、
+ * コネクタ同士が交差するため、候補全体をKP順で同時に割り当てる。
+ */
+export function layoutOrderedUserLabels(candidates, occupiedRanges, svgHeight) {
+    if (!candidates.length) return [];
+    const halfHeight = 14;
+    const padding = 3;
+    const minGap = (halfHeight + padding) * 2;
+    const minY = halfHeight + 2;
+    const maxY = Math.max(minY, svgHeight - halfHeight - 2);
+    const sorted = [...candidates].sort((a, b) => a.desiredY - b.desiredY);
+    const slots = [];
+    for (let y = minY; y <= maxY; y += 4) {
+        const top = y - halfHeight;
+        const bottom = y + halfHeight;
+        if (!occupiedRanges.some(([start, end]) => bottom > start && top < end)) slots.push(y);
+    }
+    if (!slots.length) {
+        return sorted.map(candidate => ({ candidate, y: Math.max(minY, Math.min(maxY, candidate.desiredY)) }));
+    }
+
+    // 動的計画法で「順序を維持しつつ元位置からの総移動量が最小」の組合せを選ぶ。
+    const count = sorted.length;
+    const back = Array.from({ length: count }, () => new Int32Array(slots.length).fill(-1));
+    let previous = new Float64Array(slots.length);
+    for (let j = 0; j < slots.length; j += 1) previous[j] = Math.abs(slots[j] - sorted[0].desiredY);
+
+    for (let i = 1; i < count; i += 1) {
+        const current = new Float64Array(slots.length).fill(Infinity);
+        let bestCost = Infinity;
+        let bestIndex = -1;
+        let eligible = 0;
+        for (let j = 0; j < slots.length; j += 1) {
+            while (eligible < slots.length && slots[eligible] <= slots[j] - minGap) {
+                if (previous[eligible] < bestCost) {
+                    bestCost = previous[eligible];
+                    bestIndex = eligible;
+                }
+                eligible += 1;
+            }
+            if (bestIndex < 0) continue;
+            current[j] = bestCost + Math.abs(slots[j] - sorted[i].desiredY);
+            back[i][j] = bestIndex;
+        }
+        previous = current;
+    }
+
+    let lastIndex = 0;
+    for (let j = 1; j < previous.length; j += 1) {
+        if (previous[j] < previous[lastIndex]) lastIndex = j;
+    }
+    if (!Number.isFinite(previous[lastIndex])) {
+        // 表示高に収まらないほど件数が多い場合も、順序だけは崩さない。
+        let y = minY;
+        return sorted.map(candidate => {
+            const placed = Math.max(y, Math.min(maxY, candidate.desiredY));
+            y = placed + minGap;
+            return { candidate, y: Math.min(maxY, placed) };
+        });
+    }
+
+    const result = new Array(count);
+    for (let i = count - 1; i >= 0; i -= 1) {
+        result[i] = { candidate: sorted[i], y: slots[lastIndex] };
+        lastIndex = back[i][lastIndex];
+    }
+    return result;
 }

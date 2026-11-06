@@ -22,14 +22,14 @@
     },
     {
         "id": "honshi-shimanami-onomichi-office",
-        "name": "しまなみ尾道管理センター（西瀬戸尾道IC〜生口島南IC）",
+        "name": "しまなみ尾道管理センター（西瀬戸尾道IC〜大三島IC）",
         "route": "e76",
         "scope": "honshi-shimanami-onomichi-office",
         "portal": "honshi"
     },
     {
         "id": "honshi-shimanami-imabari-office",
-        "name": "しまなみ今治管理センター（生口島南IC〜今治IC）",
+        "name": "しまなみ今治管理センター（大三島IC〜今治IC）",
         "route": "e76",
         "scope": "honshi-shimanami-imabari-office",
         "portal": "honshi"

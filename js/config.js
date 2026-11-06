@@ -70,7 +70,10 @@ export const STATE = {
 
     // 選択位置
     selectedKp: null,
+    // 描画位置は通算KPのまま保持し、画面上のラベルだけ路線KPを表示する。
+    selectedDisplayKp: null,
     selectedDirection: null,
+    selectedFacility: null,
     selectedStructure: null,
 
     // 表示対象となる公式KP範囲

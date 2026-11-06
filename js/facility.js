@@ -1,4 +1,4 @@
-import { LAYOUT, COLORS } from "./config.js";
+import { LAYOUT, COLORS, STATE } from "./config.js";
 import { kpToY, createSVG, getUpRoadX, getDownRoadX } from "./utils.js";
 import { getLabelStyle } from "./styleRules.js";
 
@@ -67,14 +67,22 @@ export function buildFacilityCandidates(facilities) {
 function createFacility(facility, kp, direction, labelY = null) {
 
     const rampMode = getRampMode(facility, direction);
+    const selected = STATE.selectedFacility?.name === facility.name
+        && STATE.selectedFacility?.type === facility.type
+        && STATE.selectedFacility?.direction === direction
+        && Math.abs(STATE.selectedFacility?.kp - kp) < 1e-9;
 
     const group = createSVG("g", {
-        class: "facility",
+        class: `facility${selected ? " is-selected" : ""}`,
         "data-name": facility.name,
         "data-type": facility.type,
         "data-direction": direction,
         "data-kp": kp,
-        "data-ramps": facility.ramps || "ABCD"
+        "data-ramps": facility.ramps || "ABCD",
+        tabindex: 0,
+        role: "button",
+        "aria-pressed": String(selected),
+        "aria-label": `${facility.name} ${direction} ${kp} KP`
     });
 
     const style = getLabelStyle({

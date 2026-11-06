@@ -62,10 +62,10 @@
       { "id": "e30", "name": "E30 早島IC〜坂出IC", "scope": "honshi-sakaide-office", "portal": "honshi" }
     ] }
     ,{ "id": "shimanami-onomichi-office", "operatorId": "honshi", "name": "しまなみ尾道管理センター", "routes": [
-      { "id": "e76", "name": "E76 西瀬戸尾道IC〜生口島南IC", "scope": "honshi-shimanami-onomichi-office", "portal": "honshi" }
+      { "id": "e76", "name": "E76 西瀬戸尾道IC〜大三島IC", "scope": "honshi-shimanami-onomichi-office", "portal": "honshi" }
     ] }
     ,{ "id": "shimanami-imabari-office", "operatorId": "honshi", "name": "しまなみ今治管理センター", "routes": [
-      { "id": "e76", "name": "E76 生口島南IC〜今治IC", "scope": "honshi-shimanami-imabari-office", "portal": "honshi" }
+      { "id": "e76", "name": "E76 大三島IC〜今治IC", "scope": "honshi-shimanami-imabari-office", "portal": "honshi" }
     ] }
   ]
 }

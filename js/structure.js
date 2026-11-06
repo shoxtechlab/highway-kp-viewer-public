@@ -133,6 +133,7 @@ function createStructureBody(structure, data, direction, options = {}) {
 
     group.appendChild(createSVG("rect", {
         "data-name" : structure.name,
+        "data-structure-key": structure.structureKey,
         class: "structure-body",
         "data-direction": direction,
         "data-type": structure.type,
@@ -156,6 +157,7 @@ function createStructureBody(structure, data, direction, options = {}) {
 
 function sameStructureSelection(selected, structure, data, direction) {
     return Boolean(selected)
+        && selected.structureKey === structure.structureKey
         && (structure.type === "BRIDGE" || structure.type === "TUNNEL")
         && selected.name === structure.name
         && selected.type === structure.type
@@ -164,7 +166,7 @@ function sameStructureSelection(selected, structure, data, direction) {
         && selected.end === data.end;
 }
 
-function createStructureLabel(structure, data, direction, labelY) {
+function createStructureLabel(structure, data, direction, labelY, options = {}) {
     //------------------------------------
     // ラベル
     //------------------------------------
@@ -176,7 +178,8 @@ function createStructureLabel(structure, data, direction, labelY) {
             structure,
             data,
             direction,
-            labelY
+            labelY,
+            options
         )
     );
 
@@ -227,7 +230,8 @@ export function buildStructureCandidates(structures, options = {}) {
                             structure,
                             structure.up,
                             "up",
-                            y
+                            y,
+                            options
                         )
                     );
                 }
@@ -271,7 +275,8 @@ export function buildStructureCandidates(structures, options = {}) {
                             structure,
                             structure.down,
                             "down",
-                            y
+                            y,
+                            options
                         )
                     );
                 }
@@ -293,7 +298,7 @@ function hasStructureRange(data) {
 }
 
 
-function createLabel(structure, data, direction, labelY) {
+function createLabel(structure, data, direction, labelY, options = {}) {
     const style = getLabelStyle({
         kind: "structure",
         ...structure
@@ -303,15 +308,26 @@ function createLabel(structure, data, direction, labelY) {
         direction === "up"
             ? data.end
             : data.start;
+    const selected = sameStructureSelection(
+        options.selectedStructure,
+        structure,
+        data,
+        direction
+    );
 
     const group = createSVG("g", {
         "data-name": structure.name,
+        "data-structure-key": structure.structureKey,
         "data-type": structure.type,
-        class: "structure-label",
+        class: `structure-label${selected ? " is-selected" : ""}`,
         "data-kp": fixedKp,
         "data-direction": direction,
         "data-start": data.start,
-        "data-end": data.end
+        "data-end": data.end,
+        tabindex: 0,
+        role: "button",
+        "aria-pressed": String(selected),
+        "aria-label": `${structure.name} ${direction} ${data.start}–${data.end} KP`
     });
 
     const anchorY = kpToY((data.start + data.end) / 2);

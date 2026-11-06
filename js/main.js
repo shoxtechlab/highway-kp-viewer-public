@@ -8,6 +8,11 @@ import { mouseYToKp, getSvgPoint, kpToY } from "./utils.js";
 import { initTheme } from "./theme.js";
 import { resolveRouteScope } from "./routeScope.js";
 import { initEditorPreview, renderEditorRecords } from "./editorPreview.js";
+import { parseKpInput } from "./kpInput.js";
+import { createSelectionUrl, readSelectionFromSearch } from "./selectionUrl.js";
+import { createPrintDocument, preparePrintSvg } from "./printView.js";
+import { initStructureDetails } from "./structureDetails.js";
+import { withStructureKeys } from "./structureIdentity.js";
 
 async function fetchApi(path) {
     const response = await fetch(path);
@@ -29,7 +34,7 @@ async function main() {
     const useV2Renderer = params.get("ui") !== "v1";
 
     const routeData = await fetchApi(`/api/route/${routeId}`);
-    const road = routeData.road;
+    const road = withStructureKeys(routeData.road);
     const selectedSections = selectSections(road, requestedSectionIds);
     const kpSystems = buildKpSystems(road, selectedSections);
 
@@ -62,7 +67,7 @@ async function main() {
     const routeTitle = document.getElementById("route-title");
     const structureVisibility = { BRIDGE: true, TUNNEL: true };
     const minManualZoom = 0.2;
-    const maxManualZoom = 8;
+    const maxManualZoom = 10;
     let userLayerRecords = [];
     let hiddenUserLayerTypes = new Set();
     initTheme({ onChange: () => render() });
@@ -73,6 +78,7 @@ async function main() {
         down: road.direction_labels?.down || "下り"
     };
     const directionLabel = direction => directionLabels[direction] || direction;
+    initStructureDetails(container, road, directionLabel);
     for (const option of directionInput.options) {
         option.textContent = directionLabel(option.value);
     }
@@ -139,8 +145,9 @@ async function main() {
         kpSystems,
         directionLabels,
         getCurrentKp: () => ({
-            kp: Number(kpInput.value),
-            kpSystemId: kpSystemInput.value || kpSystems[0]?.id || "route"
+            kp: parseKpInput(kpInput.value),
+            kpSystemId: kpSystemInput.value || kpSystems[0]?.id || "route",
+            direction: directionInput.value
         }),
         onRecordsChange: (records, hiddenTypes) => {
             userLayerRecords = records;
@@ -154,6 +161,7 @@ async function main() {
     };
     configureStructureVisibilityControls();
     configureKpSystems();
+    configurePrintControls();
 
     const hasRouteData = road.length > 0
         && coverage.up.length > 0
@@ -288,6 +296,7 @@ async function main() {
         renderEditorRecords(svg, userLayerRecords, {
             hiddenTypes: hiddenUserLayerTypes,
             toRouteKp: (kp, kpSystemId) => inputToRouteKpForSystem(kp, kpSystemById(kpSystemId) || kpSystems[0]),
+            viewRange: { start: STATE.viewStart, end: STATE.viewEnd },
             onSelect: (record, routeKp) => handleKpSelect(
                 routeKp,
                 record.direction === "both" ? directionInput.value : record.direction,
@@ -342,6 +351,46 @@ async function main() {
         return Number(kp.toFixed(3)).toString();
     }
 
+    function normalizeKpInput() {
+        const value = parseKpInput(kpInput.value);
+        if (Number.isFinite(value)) kpInput.value = formatKp(value);
+        return value;
+    }
+
+    function syncSelectionUrl(mode = "replace") {
+        if (!Number.isFinite(STATE.selectedDisplayKp) || !STATE.selectedDirection) return;
+        const url = createSelectionUrl(location.href, {
+            direction: STATE.selectedDirection,
+            kp: formatKp(STATE.selectedDisplayKp),
+            kpSystemId: kpSystems.length > 1 ? selectedKpSystem()?.id : null
+        });
+        const method = mode === "push" ? "pushState" : "replaceState";
+        history[method]({}, "", url);
+    }
+
+    async function restoreSelectionFromUrl({ scroll = true } = {}) {
+        const selection = readSelectionFromSearch(location.search);
+        if (!selection) return false;
+        if (selection.kpSystemId && kpSystemById(selection.kpSystemId)) {
+            kpSystemInput.value = selection.kpSystemId;
+            previousKpSystemValue = selection.kpSystemId;
+        }
+        directionInput.value = selection.direction;
+        kpInput.value = formatKp(selection.kp);
+        updateKpInputBounds();
+        const routeKp = inputToRouteKp(selection.kp);
+        if (!Number.isFinite(routeKp) || routeKp < STATE.viewStart || routeKp > STATE.viewEnd) {
+            kpError.textContent = "共有された位置は現在の表示区間外です。";
+            return false;
+        }
+        const restored = await handleKpSelect(routeKp, selection.direction, "共有位置", {
+            selectStructureAtKp: true,
+            syncUrl: false
+        });
+        if (restored && scroll) scrollSelectionIntoView(routeKp);
+        return restored;
+    }
+
     function coverageMessage(kp, direction) {
         const ranges = coverage[direction] || [];
         const rangeText = ranges.length
@@ -362,6 +411,7 @@ async function main() {
         STATE.selectedKp = null;
         STATE.selectedDisplayKp = null;
         STATE.selectedDirection = null;
+        STATE.selectedFacility = null;
         STATE.selectedStructure = null;
         kpUI.hidden = true;
         render();
@@ -405,12 +455,13 @@ async function main() {
         const localKp = routeToInputKp(kp);
         STATE.selectedDisplayKp = Number.isFinite(localKp) ? localKp : kp;
         STATE.selectedDirection = direction;
+        STATE.selectedFacility = options.facility || null;
         const requestedStructure = options.structure
             || (options.selectStructureAtKp ? structureAtKp(kp, direction) : null);
         const togglesOff = options.toggleStructure
             && sameStructureSelection(STATE.selectedStructure, requestedStructure);
         STATE.selectedStructure = togglesOff ? null : requestedStructure;
-        kpInput.value = routeToInputKp(kp).toFixed(2);
+        kpInput.value = formatKp(routeToInputKp(kp));
         directionInput.value = direction;
         kpError.classList.remove("is-notice");
         kpError.textContent = "";
@@ -426,12 +477,15 @@ async function main() {
             kpError.classList.add("is-notice");
             kpError.textContent = options.notice;
         }
+        if (options.syncUrl !== false) {
+            syncSelectionUrl(options.pushHistory ? "push" : "replace");
+        }
         render();
         return true;
     }
 
     async function submitKp() {
-        const inputKp = Number(kpInput.value);
+        const inputKp = normalizeKpInput();
         const kp = inputToRouteKp(inputKp);
         if (!Number.isFinite(kp) || kp < STATE.viewStart || kp > STATE.viewEnd) {
             kpError.textContent = "選択した路線の収録KP範囲内で入力してください。";
@@ -470,88 +524,25 @@ async function main() {
     }
 
     function launchDriveMode() {
-        if (!navigator.geolocation) {
-            showGpsError("このブラウザは位置情報に対応していません。");
-            return;
-        }
         if (!window.confirm(
             "走行モードでは、終了するまで継続して位置情報を取得します。開始しますか？"
         )) return;
 
-        updateDriveLaunchUI(true);
-        navigator.geolocation.getCurrentPosition(
-            prepareDriveMode,
-            error => {
-                updateDriveLaunchUI(false);
-                handleGpsError(error);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 3000
+        const localKp = parseKpInput(kpInput.value);
+        const routeKp = Number.isFinite(localKp) ? inputToRouteKp(localKp) : NaN;
+        sessionStorage.setItem("kp-viewer-drive-start", JSON.stringify({
+            fallback: {
+                route: routeId,
+                direction: directionInput.value,
+                localKp: Number.isFinite(localKp) ? localKp : null,
+                routeKp: Number.isFinite(routeKp) ? routeKp : null,
+                kpSystemId: selectedKpSystem()?.id || "route"
             }
-        );
-        gpsStatus.className = "";
-        gpsStatus.textContent = "走行モードを開始する位置を確認しています。";
-    }
-
-    function updateDriveLaunchUI(loading) {
-        if (!driveModeToggle) return;
-        driveModeToggle.disabled = loading;
-        const label = driveModeToggle.querySelector("span");
-        if (label) label.textContent = loading ? "現在地を確認中…" : "走行モードを開始";
-    }
-
-    async function prepareDriveMode(position) {
-        const point = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            heading: position.coords.heading,
-            speed: position.coords.speed
-        };
-
-        try {
-            const query = new URLSearchParams({
-                lat: point.lat,
-                lon: point.lon,
-                preferredRoute: routeId,
-                preferredDirection: directionInput.value
-            });
-            if (Number.isFinite(point.heading)) query.set("heading", point.heading);
-            if (Number.isFinite(point.speed)) query.set("speed", point.speed);
-            if (Number.isFinite(point.accuracy)) query.set("accuracy", point.accuracy);
-            const match = await fetchApi(`/api/nearest?${query}`);
-            const allowedDistanceM = Math.max(300, point.accuracy * 2);
-
-            if (!match || match.distanceM > allowedDistanceM) {
-                const distance = match ? `（最寄りの収録路線まで約${formatDistance(match.distanceM)}）` : "";
-                showGpsError(`収録路線上にいないため、走行モードを開始できません。${distance}`);
-                return;
-            }
-
-            if (match.route !== routeId) {
-                const startDifferentRoute = window.confirm(
-                    `現在地は、開いている路線ではなく${match.routeName || match.route.toUpperCase()}です。\n` +
-                    "この路線で走行モードを開始しますか？"
-                );
-                if (!startDifferentRoute) {
-                    gpsStatus.className = "";
-                    gpsStatus.textContent = "走行モードを開始しませんでした。";
-                    return;
-                }
-            }
-            sessionStorage.setItem("kp-viewer-drive-start", JSON.stringify({ point, match }));
-            const target = new URL("drive.html", location.href);
-            target.searchParams.set("route", match.route);
-            if (portalId) target.searchParams.set("portal", portalId);
-            location.assign(target.href);
-        } catch (error) {
-            console.error(error);
-            showGpsError("現在地を路線へ照合できないため、走行モードを開始できませんでした。");
-        } finally {
-            updateDriveLaunchUI(false);
-        }
+        }));
+        const target = new URL("drive.html", location.href);
+        target.searchParams.set("route", routeId);
+        if (portalId) target.searchParams.set("portal", portalId);
+        location.assign(target.href);
     }
 
     async function handleGpsPosition(position) {
@@ -706,7 +697,7 @@ async function main() {
     debugGpsSubmit.addEventListener("click", submitDebugPosition);
     directionInput.addEventListener("change", updateKpInputBounds);
     kpSystemInput.addEventListener("change", () => {
-        const inputValue = Number(kpInput.value);
+        const inputValue = parseKpInput(kpInput.value);
         if (kpInput.value.trim() && Number.isFinite(inputValue)) {
             const previousSystem = kpSystemById(previousKpSystemValue);
             const previousSection = sectionForInputKp(previousSystem, inputValue);
@@ -726,6 +717,16 @@ async function main() {
     kpInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitKp();
     });
+    kpInput.addEventListener("blur", normalizeKpInput);
+
+    // SVG内の施設・構造物ラベルも、通常のボタンと同じくEnter/Spaceで選択できるようにする。
+    container.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const target = event.target.closest?.(".facility[role='button'], .structure-label[role='button']");
+        if (!target) return;
+        event.preventDefault();
+        target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
 
     function handleClick(e, svg) {
         const target = e.target;
@@ -742,7 +743,16 @@ async function main() {
                 selection.kp,
                 facility.dataset.direction,
                 facility.dataset.name,
-                { notice: selection.notice }
+                {
+                    notice: selection.notice,
+                    facility: {
+                        name: facility.dataset.name,
+                        type: facility.dataset.type,
+                        direction: facility.dataset.direction,
+                        kp: Number(facility.dataset.kp)
+                    },
+                    pushHistory: true
+                }
             );
             return;
         }
@@ -755,7 +765,8 @@ async function main() {
                 structureLabel.dataset.name,
                 {
                     structure: structureSelectionFromElement(structureLabel),
-                    toggleStructure: true
+                    toggleStructure: true,
+                    pushHistory: true
                 }
             );
             return;
@@ -789,6 +800,7 @@ async function main() {
 
     function structureSelectionFromElement(element) {
         return {
+            structureKey: element.dataset.structureKey,
             name: element.dataset.name,
             type: element.dataset.type,
             direction: element.dataset.direction,
@@ -807,6 +819,7 @@ async function main() {
                 && kp <= item.range.end)
             .sort((a, b) => (a.range.end - a.range.start) - (b.range.end - b.range.start))
             .map(item => ({
+                structureKey: item.structure.structureKey,
                 name: item.structure.name,
                 type: item.structure.type,
                 direction,
@@ -852,6 +865,7 @@ async function main() {
 
     function sameStructureSelection(a, b) {
         return Boolean(a && b)
+            && a.structureKey === b.structureKey
             && a.name === b.name
             && a.type === b.type
             && a.direction === b.direction
@@ -872,6 +886,106 @@ async function main() {
         previousKpSystemValue = kpSystemInput.value;
         kpSystemField.hidden = kpSystems.length <= 1;
         updateKpInputBounds();
+    }
+
+    function configurePrintControls() {
+        const menu = document.getElementById("mobile-overflow-menu");
+        if (!menu || menu.querySelector(".print-view-open")) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "print-view-open";
+        button.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z"></path></svg><span>印刷・PDF</span>`;
+        menu.appendChild(button);
+
+        const dialog = document.createElement("dialog");
+        dialog.className = "print-view-dialog";
+        dialog.innerHTML = `
+            <form method="dialog" class="print-view-form">
+                <div class="print-view-heading"><p>PRINT / PDF</p><h2>印刷範囲</h2></div>
+                <p class="print-view-note">本線、KP軸、現在表示中の施設・構造物・追加データを、現在の縮尺で印刷します。</p>
+                <p class="print-view-system"></p>
+                <div class="print-view-range">
+                    <label>開始KP<input class="print-view-start" type="number" step="0.1" inputmode="decimal" required></label>
+                    <span>〜</span>
+                    <label>終了KP<input class="print-view-end" type="number" step="0.1" inputmode="decimal" required></label>
+                </div>
+                <p class="print-view-error" role="alert"></p>
+                <div class="print-view-actions"><button value="cancel">キャンセル</button><button class="is-primary" value="default">印刷画面を開く</button></div>
+            </form>`;
+        document.body.appendChild(dialog);
+        const form = dialog.querySelector("form");
+        const startInput = dialog.querySelector(".print-view-start");
+        const endInput = dialog.querySelector(".print-view-end");
+        const systemText = dialog.querySelector(".print-view-system");
+        const error = dialog.querySelector(".print-view-error");
+
+        button.addEventListener("click", () => {
+            const system = selectedKpSystem();
+            const sectionRanges = system?.sections?.map(section => [section.route_start_km, section.route_end_km]).flat().filter(Number.isFinite) || [];
+            const routeStart = sectionRanges.length ? Math.max(STATE.viewStart, Math.min(...sectionRanges)) : STATE.viewStart;
+            const routeEnd = sectionRanges.length ? Math.min(STATE.viewEnd, Math.max(...sectionRanges)) : STATE.viewEnd;
+            const convertedStart = routeToInputKpForSystem(routeStart, system);
+            const convertedEnd = routeToInputKpForSystem(routeEnd, system);
+            const localStart = Number.isFinite(convertedStart) ? convertedStart : routeStart;
+            const localEnd = Number.isFinite(convertedEnd) ? convertedEnd : routeEnd;
+            startInput.value = formatKp(Math.min(localStart, localEnd));
+            endInput.value = formatKp(Math.max(localStart, localEnd));
+            systemText.textContent = `路線名: ${system?.name || road.name || routeId.toUpperCase()}`;
+            error.textContent = "";
+            document.getElementById("mobile-overflow-menu").hidden = true;
+            document.getElementById("mobile-menu-toggle").setAttribute("aria-expanded", "false");
+            dialog.showModal();
+        });
+
+        form.addEventListener("submit", event => {
+            if (event.submitter?.value === "cancel") return;
+            event.preventDefault();
+            const system = selectedKpSystem();
+            const inputStart = Number(startInput.value);
+            const inputEnd = Number(endInput.value);
+            const routeValues = [inputStart, inputEnd].map(value => inputToRouteKpForSystem(value, system));
+            const printStart = Math.max(STATE.viewStart, Math.min(...routeValues));
+            const printEnd = Math.min(STATE.viewEnd, Math.max(...routeValues));
+            if (!routeValues.every(Number.isFinite) || !(printEnd > printStart)) {
+                error.textContent = "現在の路線名に含まれる有効な開始・終了KPを入力してください。";
+                return;
+            }
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) {
+                error.textContent = "印刷画面を開けませんでした。ポップアップを許可してください。";
+                return;
+            }
+            const previousStart = STATE.viewStart;
+            const previousEnd = STATE.viewEnd;
+            let printSvg;
+            try {
+                STATE.viewStart = printStart;
+                STATE.viewEnd = printEnd;
+                const renderer = useV2Renderer ? createExpresswaySvgV2 : createExpresswaySvg;
+                printSvg = renderer({
+                    ...viewRoad,
+                    structures: visibleStructures(),
+                    selectedStructure: STATE.selectedStructure,
+                    activeScaleSystem: system,
+                    activeKpSystems: kpSystems
+                });
+                fitSvgLabels(printSvg);
+                renderEditorRecords(printSvg, userLayerRecords, {
+                    hiddenTypes: hiddenUserLayerTypes,
+                    toRouteKp: (kp, kpSystemId) => inputToRouteKpForSystem(kp, kpSystemById(kpSystemId) || kpSystems[0]),
+                    viewRange: { start: printStart, end: printEnd }
+                });
+            } finally {
+                STATE.viewStart = previousStart;
+                STATE.viewEnd = previousEnd;
+            }
+            const cleanSvg = preparePrintSvg(printSvg);
+            const rangeLabel = `${system?.name || "路線KP"} ${formatKp(inputStart)}〜${formatKp(inputEnd)} KP`;
+            printWindow.document.open();
+            printWindow.document.write(createPrintDocument({ svg: cleanSvg, title: pageTitle, rangeLabel }));
+            printWindow.document.close();
+            dialog.close();
+        });
     }
 
     function fitTerminalFacilityToCoverage({ kp, direction, name, type }) {
@@ -1054,6 +1168,13 @@ async function main() {
     function initMiniMap(lat, lon) {
         if (!miniMapEl) return;
         if (miniMap) return;
+        if (typeof L === "undefined") {
+            // The route viewer must remain usable when the optional Leaflet CDN
+            // is unavailable. Only the mini map is disabled in that case.
+            miniMapEl.hidden = true;
+            console.warn("Mini map is unavailable because Leaflet did not load.");
+            return;
+        }
 
         miniMap = L.map("mini-map", {
             zoomControl: false,
@@ -1195,6 +1316,15 @@ async function main() {
     updateScale();
     updateKpInputBounds();
     render();
+    await restoreSelectionFromUrl();
+
+    window.addEventListener("popstate", () => {
+        if (!readSelectionFromSearch(location.search)) {
+            clearSelection();
+            return;
+        }
+        restoreSelectionFromUrl().catch(error => console.error(error));
+    });
 
     window.addEventListener("resize", () => {
         const prev = STATE.isMobile;
@@ -1242,12 +1372,19 @@ async function main() {
     zoomIn.title = "拡大（長押し対応／PCは路線図上でShift＋ホイール）";
 
     function setZoom(value) {
+        const keepSelectedKpCentered = Number.isFinite(STATE.selectedKp);
         STATE.zoom = Math.max(minManualZoom, Math.min(maxManualZoom, Math.round(value * 10) / 10));
         slider.value = String(STATE.zoom);
         zoomOut.disabled = STATE.zoom <= minManualZoom;
         zoomIn.disabled = STATE.zoom >= maxManualZoom;
         updateScale();
         render();
+        if (keepSelectedKpCentered) {
+            requestAnimationFrame(() => {
+                container.querySelector(".v2-focus-ring, .selection-marker")
+                    ?.scrollIntoView({ block: "center", inline: "nearest" });
+            });
+        }
     }
 
     slider.addEventListener("input", (e) => {
@@ -1295,8 +1432,9 @@ async function main() {
         button.addEventListener("contextmenu", event => event.preventDefault());
     }
 
-    bindZoomButton(zoomOut, -0.1);
-    bindZoomButton(zoomIn, 0.1);
+    // ボタンは1回で従来の3段階分動かす。Shift+ホイールは微調整用に0.1刻みを維持する。
+    bindZoomButton(zoomOut, -0.3);
+    bindZoomButton(zoomIn, 0.3);
 
     let lastWheelZoomAt = 0;
     container.addEventListener("wheel", event => {

@@ -365,9 +365,9 @@
     "routes": {
       "e76": {
         "start": 0,
-        "end": 24.5,
+        "end": 29.5,
         "startName": "西瀬戸尾道IC",
-        "endName": "生口島南IC"
+        "endName": "大三島IC"
       }
     }
   },
@@ -376,9 +376,9 @@
     "home": "honshi/",
     "routes": {
       "e76": {
-        "start": 24.5,
+        "start": 29.5,
         "end": 59.2,
-        "startName": "生口島南IC",
+        "startName": "大三島IC",
         "endName": "今治IC"
       }
     }

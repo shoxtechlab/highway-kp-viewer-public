@@ -35,7 +35,9 @@ export function createExpresswaySvg(road, onClick) {
     const svg = createSVG("svg", {
         width: STATE.isMobile ? "100%" : LAYOUT.width,
         viewBox: `0 0 ${LAYOUT.width} ${height}`,
-        preserveAspectRatio: "xMinYMin meet"
+        preserveAspectRatio: "xMinYMin meet",
+        role: "group",
+        "aria-label": `${road.name || "高速道路"} 路線図`
     });
 
     //------------------------------------

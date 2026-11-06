@@ -11,6 +11,7 @@
 | 地点・区間を追加・編集する | [編集モード](user-annotations.md) |
 | CSV・JSONを読み込み、書き出す | [ファイル読込](user-annotations.md#4-ファイルを読み込む)・[書出](user-annotations.md#5-ファイルを書き出す) |
 | IC内部のランプを確認する | [ICランプページ](ic-ramp-pages.md) |
+| 橋梁・トンネルの諸元を確認する | [構造物の諸元表示](structure-details.md) |
 | 地図・写真を資料へ利用する前に確認する | [地図コンテンツ利用ガイド](map-content-usage.md) |
 
 ## 開発者向け
