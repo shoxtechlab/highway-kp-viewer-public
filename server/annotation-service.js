@@ -29,6 +29,11 @@ function color(value, fallback) {
 }
 
 export function normalizeAnnotation(input, { routeId, now = new Date().toISOString() } = {}) {
+  // 写真共有が未設定の間、メタデータを黙って落として保存成功にしない。
+  // 端末用の写真付きJSONをAPIへ直接送った場合も、画像の消失を防ぐ。
+  if (input?.images !== undefined && (!Array.isArray(input.images) || input.images.length)) {
+    throw apiError(400, "写真の共有保存にはまだ対応していません。写真付きデータは端末へ保存してください。");
+  }
   const id = text(input?.id, 80, "id", true);
   const resolvedRouteId = text(routeId || input?.routeId, 50, "routeId", true).toLowerCase();
   if (!ROUTE_ID.test(resolvedRouteId)) throw apiError(400, "routeId is invalid.");

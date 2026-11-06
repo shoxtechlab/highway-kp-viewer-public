@@ -30,6 +30,14 @@ test("roadside equipment types remain distinct", () => {
     assert.equal(normalizeAnnotation({ ...base, type }, { routeId: "e28" }).type, type.toLowerCase());
   }
 });
+
+test("shared API rejects unsupported photos instead of silently losing references", () => {
+  for (const images of [[{ id: "photo" }], "invalid", null]) {
+    assert.throws(() => normalizeAnnotation({ ...base, images }), error => error.status === 400 && /写真/.test(error.message));
+  }
+  assert.equal(normalizeAnnotation({ ...base, images: [] }).schemaVersion, 1);
+  assert.equal(normalizeAnnotation(base).name, base.name);
+});
 test("section end must follow its start", () => {
   assert.throws(() => normalizeAnnotation({ ...base, geometryType: "section", endKp: 10 }), /endKp/);
 });

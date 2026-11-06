@@ -1,3 +1,5 @@
+import { readLocalAnnotations } from "./annotationStore.js";
+
 const PIXELS_PER_KM = 120;
 const API_INTERVAL_MS = 5000;
 const DISPLAY_INTERVAL_MS = 500;
@@ -688,29 +690,6 @@ async function loadDriveAnnotations(routeId) {
     const merged = new Map(sharedRecords.map(record => [record.id, record]));
     for (const record of localRecords) merged.set(record.id, record);
     driveAnnotations = [...merged.values()].filter(record => !record.expiresAt || Date.parse(record.expiresAt) > Date.now());
-}
-
-function readLocalAnnotations(routeId) {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open("kp-viewer-user-layer", 1);
-        request.onupgradeneeded = () => {
-            const store = request.result.createObjectStore("items", { keyPath: "id" });
-            store.createIndex("routeId", "routeId", { unique: false });
-        };
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-            const db = request.result;
-            const read = db.transaction("items").objectStore("items").index("routeId").getAll(routeId);
-            read.onsuccess = () => {
-                db.close();
-                resolve(read.result || []);
-            };
-            read.onerror = () => {
-                db.close();
-                reject(read.error);
-            };
-        };
-    });
 }
 
 function annotationRouteKp(value, kpSystemId, road) {

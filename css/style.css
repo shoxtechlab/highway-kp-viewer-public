@@ -61,6 +61,7 @@ body {
 #kp-search select,
 #kp-search input { padding: 8px 10px; background: #fff; }
 #kp-search input { width: 120px; border: 0; }
+#kp-input::placeholder { font-size: 0.75em; }
 .kp-input-wrap { display: flex; align-items: center; background: #fff; border: 1px solid #aebbb3; border-radius: 8px; padding-right: 10px; font-weight: 600; }
 #kp-submit,
 #gps-submit { display: inline-flex; padding: 8px 18px; border-color: #007f31; background: #00973a; color: #fff; font-weight: 700; cursor: pointer; }

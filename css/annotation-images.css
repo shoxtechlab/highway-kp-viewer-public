@@ -1,0 +1,23 @@
+.annotation-photo-editor { padding: 12px; border: 1px solid #c8d3cc; border-radius: 10px; }
+.annotation-photo-editor strong { font-size: 13px; }
+.annotation-photo-editor small, .annotation-photo-editor p { color: #607067; font-size: 11px; }
+.annotation-photo-editor input { max-width: 100%; font: inherit; font-size: 12px; }
+.annotation-photo-thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.annotation-photo-card { min-width: 0; }
+.annotation-photo-card img { width: 100%; height: 80px; object-fit: cover; border-radius: 6px; }
+.annotation-photo-card textarea { box-sizing: border-box; width: 100%; font: inherit; font-size: 11px; }
+.annotation-photo-card button, .annotation-photo-nav button, .annotation-photo-close { min-height: 36px; border: 1px solid #a9bbb0; border-radius: 7px; padding: 5px 9px; color: #087f3e; background: #fff; font: inherit; font-size: 12px; }
+.annotation-photo-dialog { width: min(800px, calc(100vw - 36px)); max-height: calc(100dvh - 40px); overflow: auto; border: 1px solid #c8d3cc; border-radius: 14px; padding: 16px; color: #18251d; background: #fff; }
+.annotation-photo-dialog::backdrop { background: #0009; }
+.annotation-photo-dialog h2 { margin: 0 80px 14px 0; font-size: 18px; }
+.annotation-photo-dialog>img { width: 100%; max-height: 65dvh; object-fit: contain; }
+.annotation-photo-dialog>img[hidden] { display: none; }
+.annotation-photo-close { position: absolute; top: 12px; right: 12px; }
+.annotation-photo-nav { display: flex; justify-content: space-between; gap: 12px; }
+.annotation-photo-button { cursor: pointer; }
+.editor-saved article button[data-action="photos"] { color: #087f3e; }
+.dark-theme .editor-saved article button[data-action="photos"] { color: #a7e8bc; }
+.dark-theme .annotation-photo-editor, .dark-theme .annotation-photo-dialog { background: #242e28; color: #eef4f0; border-color: #5c6a61; }
+.dark-theme .annotation-photo-editor p, .dark-theme .annotation-photo-editor small { color: #b9c4bd; }
+.dark-theme .annotation-photo-card textarea { background: #171e1a; color: #eef4f0; }
+@media print { .annotation-photo-button, .annotation-photo-dialog { display: none !important; } }

@@ -3,3 +3,4 @@ CREATE TABLE IF NOT EXISTS api_daily_usage (
   request_count INTEGER NOT NULL DEFAULT 0,
   updated_at TEXT NOT NULL
 );
+

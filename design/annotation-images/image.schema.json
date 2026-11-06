@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:highway-kp-viewer:draft:annotation-image:v1",
+  "title": "Annotation image metadata (design draft, not active)",
+  "description": "A future record.images item. Image bytes, credentials, local file paths and R2 keys are not included.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "mediaType", "byteLength", "width", "height", "createdAt"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "mediaType": { "enum": ["image/jpeg", "image/png", "image/webp"] },
+    "byteLength": { "type": "integer", "minimum": 1, "maximum": 5242880 },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1600 },
+    "height": { "type": "integer", "minimum": 1, "maximum": 1600 },
+    "caption": { "type": "string", "maxLength": 120 },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "examples": [
+    {
+      "id": "b7c43d21-0f24-47c5-901e-20591d2f0158",
+      "mediaType": "image/jpeg",
+      "byteLength": 180000,
+      "width": 1600,
+      "height": 1200,
+      "caption": "設備の外観（説明用）",
+      "createdAt": "2026-11-06T00:00:00Z"
+    }
+  ]
+}

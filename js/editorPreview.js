@@ -1,5 +1,9 @@
 import { getSvgPoint, kpToY, mouseYToKp } from "./utils.js";
 import { parseAnnotationCsv, exportAnnotationCsv } from "./annotationFiles.js";
+import { readLocalAnnotations as readRecords, saveLocalAnnotations, deleteLocalAnnotation as deleteRecord, readAnnotationImage } from "./annotationStore.js";
+import { normalizeImageRefs, imageFilename } from "./annotationImageData.js";
+import { createAnnotationImageEditor, openAnnotationPhotos, verifyStoredImage } from "./annotationImages.js";
+import { createAnnotationZip, readAnnotationZip } from "./annotationZip.js";
 
 const TYPE_OPTIONS = [
     ["incident", "事象・事故", "#d92d20", "#fff1f0"],
@@ -24,55 +28,8 @@ const escapeHtml = value => String(value ?? "")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-const DB_NAME = "kp-viewer-user-layer";
-const STORE_NAME = "items";
 const SVG_NS = "http://www.w3.org/2000/svg";
 let sessionAdminKey = "";
-
-function openDatabase() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = () => {
-            const store = request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
-            store.createIndex("routeId", "routeId", { unique: false });
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-async function readRecords(routeId) {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-        const request = db.transaction(STORE_NAME).objectStore(STORE_NAME).index("routeId").getAll(routeId);
-        request.onsuccess = () => {
-            const now = Date.now();
-            resolve(request.result.filter(item => !item.expiresAt || Date.parse(item.expiresAt) > now));
-        };
-        request.onerror = () => reject(request.error);
-    });
-}
-
-async function writeRecord(record) {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-        const request = db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).put(record);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-    });
-}
-
-async function writeRecords(records) {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, "readwrite");
-        const store = transaction.objectStore(STORE_NAME);
-        records.forEach(record => store.put(record));
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-        transaction.onabort = () => reject(transaction.error || new Error("JSONの保存を中断しました。"));
-    });
-}
 
 export function normalizeLocalJsonImport(payload, routeId, { createId = () => crypto.randomUUID() } = {}) {
     routeId = String(routeId || "").trim().toLowerCase();
@@ -80,6 +37,7 @@ export function normalizeLocalJsonImport(payload, routeId, { createId = () => cr
     if (!Array.isArray(source)) throw new Error("JSONは配列、または records 配列を持つオブジェクトにしてください。");
     if (!source.length) throw new Error("JSONに追加データがありません。");
     if (source.length > 500) throw new Error("一度に読み込める追加データは500件までです。");
+    if (payload?.schemaVersion != null && ![1, 2].includes(payload.schemaVersion)) throw new Error("未対応の保存形式です。");
 
     let skipped = 0;
     const records = source.flatMap((input, index) => {
@@ -92,6 +50,9 @@ export function normalizeLocalJsonImport(payload, routeId, { createId = () => cr
             return [];
         }
         const geometryType = input.geometryType === "section" ? "section" : "point";
+        if (input.schemaVersion != null && ![1, 2].includes(input.schemaVersion)) throw new Error("未対応の保存形式です。");
+        const imageRefs = Object.hasOwn(input, "images") ? normalizeImageRefs(input.images) : undefined;
+        if (imageRefs?.length && geometryType !== "point") throw new Error("写真は地点のみで対応しています。");
         const startKp = Number(input.startKp);
         const endKp = geometryType === "section" ? Number(input.endKp) : null;
         if (!Number.isFinite(startKp) || startKp < 0 || startKp > 2000) {
@@ -112,7 +73,8 @@ export function normalizeLocalJsonImport(payload, routeId, { createId = () => cr
         const expiresAt = Number.isFinite(Date.parse(input.expiresAt)) ? input.expiresAt : null;
         return [{
             id: String(input.id || createId()),
-            schemaVersion: 1,
+            schemaVersion: imageRefs?.length ? 2 : 1,
+            ...(imageRefs !== undefined ? { images: imageRefs } : {}),
             routeId,
             kpSystemId: String(input.kpSystemId || "route"),
             geometryType,
@@ -131,15 +93,6 @@ export function normalizeLocalJsonImport(payload, routeId, { createId = () => cr
     });
     if (!records.length) throw new Error(`この路線（${routeId.toUpperCase()}）の追加データがありません。`);
     return { records, skipped };
-}
-
-async function deleteRecord(id) {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-        const request = db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).delete(id);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-    });
 }
 
 async function requestAdminKey() {
@@ -237,6 +190,11 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
     const openButton = document.getElementById("editor-preview-open");
     const jsonFile = layer.querySelector(".editor-json-file");
     const jsonStatus = layer.querySelector(".editor-json-status");
+    const imageEditor = createAnnotationImageEditor(form);
+    if (imageEditor) {
+        jsonFile.accept += ",.zip";
+        layer.querySelector(".editor-export-format").insertAdjacentHTML("beforeend", '<option value="zip">ZIP（写真込み）</option>');
+    }
     let privateRecords = [];
     let sharedRecords = [];
     let records = [];
@@ -246,6 +204,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
     const saveStatus = layer.querySelector(".editor-save-status");
     const editState = layer.querySelector(".editor-edit-state");
     const resetEntry = () => {
+        imageEditor?.reset();
         editingRecord = null;
         preserveEditingExpiry = false;
         editState.hidden = true;
@@ -306,9 +265,18 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
             return;
         }
         list.innerHTML = records.map(record => `<article data-id="${escapeHtml(record.id)}" data-visibility="${record.visibility}"><i style="--item-color:${escapeHtml(record.colors.primary)}"></i><div><strong>${escapeHtml(record.name)}</strong><small>${record.visibility === "public" ? "共有" : "この端末のみ"} · ${escapeHtml(typeLabel(record.type))} · ${Number(record.startKp)} KP${record.geometryType === "section" ? `〜${Number(record.endKp)} KP` : ""}</small></div><div class="editor-item-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(record.name)}を編集">編集</button><button type="button" data-action="delete" aria-label="${escapeHtml(record.name)}を削除">削除</button></div></article>`).join("");
+        if (imageEditor) list.querySelectorAll("article").forEach(article => {
+            const record = records.find(item => item.id === article.dataset.id);
+            if (!record.images?.length || record.visibility !== "private") return;
+            const button = document.createElement("button");
+            button.type = "button"; button.dataset.action = "photos"; button.textContent = `写真 ${record.images.length}`;
+            article.querySelector(".editor-item-actions").prepend(button);
+        });
         list.querySelectorAll("button").forEach(button => button.addEventListener("click", async () => {
+            if (saving) return;
             const article = button.closest("article");
             const record = records.find(item => item.id === article.dataset.id);
+            if (button.dataset.action === "photos") { await openAnnotationPhotos(record); return; }
             if (button.dataset.action === "edit") {
                 if (record.visibility === "public") {
                     try {
@@ -333,6 +301,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                 form.elements.primary.value = record.colors.primary;
                 form.elements.secondary.value = record.colors.secondary;
                 form.elements.visibility.value = record.visibility;
+                imageEditor?.load(record);
                 // 期限は利用者が選び直した場合だけ更新し、通常の編集では元の期限を維持する。
                 preserveEditingExpiry = true;
                 form.elements.expiry.value = "forever";
@@ -352,9 +321,11 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                 }
                 sharedRecords = sharedRecords.filter(record => record.id !== article.dataset.id);
             } else {
-                await deleteRecord(article.dataset.id);
+                try { await deleteRecord(article.dataset.id); }
+                catch (error) { saveStatus.textContent = error.message; return; }
                 privateRecords = privateRecords.filter(record => record.id !== article.dataset.id);
             }
+            if (editingRecord?.id === record.id) resetEntry();
             mergeLayers();
             renderSaved();
             renderTypeFilters();
@@ -386,15 +357,31 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
         jsonFile.click();
     });
     jsonFile.addEventListener("change", async () => {
+        if (saving) return;
         const file = jsonFile.files?.[0];
         if (!file) return;
+        saving = true;
         jsonStatus.classList.remove("is-error");
         jsonStatus.textContent = "ファイルを確認しています…";
         try {
-            const text = await file.text();
+            if (file.size > 100 * 1024 * 1024) throw new Error("ファイルは100MiB以下にしてください。");
+            const zip = /\.zip$/i.test(file.name) && imageEditor ? await readAnnotationZip(file) : null;
+            const text = zip ? new TextDecoder().decode(zip.get("annotations.json")) : await file.text();
             const payload = /\.csv$/i.test(file.name) ? parseAnnotationCsv(text) : JSON.parse(text.replace(/^\uFEFF/, ""));
             const imported = normalizeLocalJsonImport(payload, routeId);
-            await writeRecords(imported.records);
+            const blobs = [];
+            if (zip) {
+                const expected = new Set(["annotations.json"]);
+                for (const record of imported.records) for (const metadata of record.images || []) {
+                    const name = imageFilename(metadata), bytes = zip.get(name);
+                    if (!bytes) throw new Error("ZIPに必要な写真がありません。");
+                    const blob = new Blob([bytes], { type: metadata.mediaType });
+                    await verifyStoredImage(blob, metadata);
+                    blobs.push({ id: metadata.id, blob }); expected.add(name);
+                }
+                if ([...zip.keys()].some(name => !expected.has(name))) throw new Error("ZIPに対象外のファイルがあります。");
+            }
+            imported.records = await saveLocalAnnotations(imported.records, blobs);
             const importedIds = new Set(imported.records.map(record => record.id));
             privateRecords = [
                 ...privateRecords.filter(record => !importedIds.has(record.id)),
@@ -408,22 +395,40 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
         } catch (error) {
             jsonStatus.classList.add("is-error");
             jsonStatus.textContent = error instanceof SyntaxError ? "JSONの形式が正しくありません。" : error.message;
-        }
+        } finally { saving = false; }
     });
 
-    layer.querySelector(".editor-export").addEventListener("click", () => {
+    layer.querySelector(".editor-export").addEventListener("click", async () => {
+        if (saving) return;
         if (!records.length) { jsonStatus.textContent = "書き出す追加データがありません。"; return; }
         const format = layer.querySelector(".editor-export-format").value;
+        const hasImages = records.some(record => record.images?.length);
+        if (hasImages && format !== "zip" && !window.confirm("JSON・CSVには写真本体が含まれません。写真込みのバックアップにはZIPを選択してください。続けますか？")) return;
+        saving = true;
+        try {
         const content = format === "csv" ? exportAnnotationCsv(records)
-            : JSON.stringify({ schemaVersion: 1, records }, null, 2);
-        const url = URL.createObjectURL(new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" }));
+            : JSON.stringify({ schemaVersion: hasImages ? 2 : 1, records }, null, 2);
+        let blob = new Blob([content], { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" });
+        if (format === "zip") {
+            const entries = [{ name: "annotations.json", blob }];
+            for (const record of records) for (const metadata of record.images || []) {
+                const stored = await readAnnotationImage(metadata.id);
+                if (!stored || stored.recordId !== record.id || stored.routeId !== routeId) throw new Error("写真本体が見つかりません。書き出しを中断しました。");
+                entries.push({ name: imageFilename(metadata), blob: stored.blob });
+            }
+            blob = await createAnnotationZip(entries);
+        }
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
         link.download = `${routeId}-annotations.${format}`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (error) { jsonStatus.textContent = error.message; }
+        finally { saving = false; }
     });
     layer.querySelector(".editor-delete-all").addEventListener("click", async () => {
+        if (saving) return;
         const snapshot = [
             ...sharedRecords.map(record => ({ ...record, visibility: "public" })),
             ...privateRecords.map(record => ({ ...record, visibility: "private" }))
@@ -431,6 +436,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
         if (!snapshot.length) return;
         const publicCount = snapshot.filter(record => record.visibility === "public").length;
         if (!window.confirm(`この路線の追加データ${snapshot.length}件をすべて削除しますか？\n共有${publicCount}件・この端末のみ${snapshot.length - publicCount}件。共有データの削除は全員に反映されます。`)) return;
+        saving = true;
         try {
             if (publicCount) await requestAdminKey();
             for (const record of snapshot) {
@@ -449,6 +455,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
             jsonStatus.classList.add("is-error");
             jsonStatus.textContent = `削除を中断しました：${error.message}`;
         } finally {
+            saving = false;
             mergeLayers(); renderSaved(); renderTypeFilters(); notify();
         }
     });
@@ -489,6 +496,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
         event.preventDefault();
         if (saving) return;
         saving = true;
+        imageEditor?.setSaving(true);
         layer.querySelector(".editor-submit").disabled = true;
         const wasEditing = Boolean(editingRecord);
         saveStatus.textContent = "";
@@ -521,7 +529,14 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                 ? editingRecord.expiresAt || null
                 : (expiryDays ? new Date(Date.now() + expiryDays * 86400000).toISOString() : null)
         };
+        const photos = await imageEditor?.prepare(record);
+        if (photos && (photos.refs.length || editingRecord?.images)) {
+            record.images = photos.refs;
+            record.schemaVersion = photos.refs.length ? 2 : 1;
+        }
         if (visibility === "public") {
+            // 共有APIの既存形式は変更しない。画像を外してからの切り替えのみ許可する。
+            delete record.images;
             if (editingRecord?.visibility === "public") {
                 const updated = await sharedRequest(`/api/annotations/${encodeURIComponent(record.id)}`, {
                     method: "PUT", admin: true,
@@ -540,8 +555,8 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
                 }
             }
         } else {
-            await writeRecord(record);
-            privateRecords = [...privateRecords.filter(item => item.id !== record.id), record];
+            const [saved] = await saveLocalAnnotations([record], photos?.blobs || []);
+            privateRecords = [...privateRecords.filter(item => item.id !== record.id), saved];
             if (editingRecord?.visibility === "public") {
                 await sharedRequest(`/api/annotations/${encodeURIComponent(record.id)}?route=${encodeURIComponent(routeId)}`, { method: "DELETE", admin: true });
                 sharedRecords = sharedRecords.filter(item => item.id !== record.id);
@@ -558,6 +573,7 @@ export function initEditorPreview({ routeId, routeName, kpSystems, directionLabe
             layer.querySelector(".editor-live-preview small").textContent = error.message;
         } finally {
             saving = false;
+            imageEditor?.setSaving(false);
             layer.querySelector(".editor-submit").disabled = false;
         }
     });
@@ -690,7 +706,23 @@ export function renderEditorRecords(svg, records, {
             });
         }
         add(item, "rect", { x: labelX, y: labelY - 14, width: 250, height: 28, rx: 8, fill: record.colors.secondary, stroke: record.colors.primary, "stroke-width": 1.5, "stroke-dasharray": "5 3", class: "user-layer-label-bg" });
-        add(item, "text", { x: labelX + 10, y: labelY + 5, fill: record.colors.primary, class: "user-layer-label" }, record.name);
+        const hasPhotos = record.visibility === "private" && record.images?.length;
+        const characters = Array.from(record.name);
+        const labelName = hasPhotos && characters.length > 15 ? `${characters.slice(0, 14).join("")}…` : record.name;
+        const labelText = add(item, "text", { x: labelX + 10, y: labelY + 5, fill: record.colors.primary, class: "user-layer-label" }, labelName);
+        if (labelName !== record.name) add(labelText, "title", {}, record.name);
+        if (hasPhotos) {
+            // ラベルのKP選択とは独立したボタン。印刷時には除去する。
+            const photos = add(item, "g", { class: "annotation-photo-button", role: "button", tabindex: "0", "aria-label": `${record.name}の写真 ${record.images.length}枚`, style: "cursor:pointer" });
+            add(photos, "rect", { x: labelX + 214, y: labelY - 13, width: 34, height: 26, rx: 6, fill: record.colors.secondary, stroke: record.colors.primary });
+            add(photos, "path", { d: `M${labelX + 220} ${labelY - 6}h4l2 -3h6l2 3h4v14h-18z`, fill: "none", stroke: record.colors.primary, "stroke-width": 1.5 });
+            add(photos, "circle", { cx: labelX + 229, cy: labelY + 1, r: 3.5, fill: "none", stroke: record.colors.primary, "stroke-width": 1.5 });
+            photos.addEventListener("click", event => { event.stopPropagation(); void openAnnotationPhotos(record); });
+            photos.addEventListener("keydown", event => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.stopPropagation(); event.preventDefault(); void openAnnotationPhotos(record);
+            });
+        }
         const select = routeKp => onSelect?.(record, routeKp);
         item.addEventListener("click", event => {
             event.stopPropagation();

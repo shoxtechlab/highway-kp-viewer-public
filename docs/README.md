@@ -22,6 +22,7 @@
 | 補間・射影の計算を確認する | [KP・座標変換アルゴリズム](kp-coordinate-algorithms.md) |
 | KP体系・施設・表示範囲の関係を知る | [データモデル](data-model.md) |
 | 保存・認証・競合処理を確認する | [編集モードの技術仕様](user-annotations.md#7-データとapiの構成) |
+| 画像添付の仕様と将来設計を確認する | [追加画像：全路線の端末保存](annotation-images-design.md) |
 | 元データと公開範囲を知る | [OSM由来データ](osm-derived-route-data.md) |
 | 最近の変更を確認する | [変更履歴](release-notes.md)・[版番号の方針](../VERSIONING.md) |
 

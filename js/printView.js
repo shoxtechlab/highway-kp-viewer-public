@@ -7,8 +7,8 @@ export function preparePrintSvg(svg) {
     clone.removeAttribute("width");
     clone.removeAttribute("height");
     // 印刷範囲内で現在表示されている施設・構造物・追加データはすべて残す。
-    // 通常画面の操作UIはSVG外にあるため、SVG内では試験用ランプ遷移ボタンだけを除外する。
-    clone.querySelectorAll(".ramp-preview-link")
+    // 通常画面の操作UIはSVG外。SVG内ではランプ遷移・写真閲覧の操作ボタンを除外する。
+    clone.querySelectorAll(".ramp-preview-link, .annotation-photo-button")
         .forEach(node => node.remove());
     clone.querySelectorAll("[tabindex]").forEach(node => node.removeAttribute("tabindex"));
     return clone;
