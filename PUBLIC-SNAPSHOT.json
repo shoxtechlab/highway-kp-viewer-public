@@ -1,6 +1,6 @@
 {
-  "appVersion": "2026.11.7-beta.11",
-  "exportedAt": "2026-11-06T16:04:22.084Z",
+  "appVersion": "2026.11.7-beta.12",
+  "exportedAt": "2026-11-07T00:33:15.288Z",
   "description": "Public source snapshot; private route data and processing pipeline excluded.",
   "files": [
     ".devcontainer/devcontainer.json",

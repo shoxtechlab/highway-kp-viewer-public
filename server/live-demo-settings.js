@@ -60,7 +60,7 @@ export async function handleDemoAdminRequest(request, { store, adminKey, now = D
                 else {
                     if (typeof body.startKp !== "number" || !Number.isFinite(body.startKp) || body.startKp < 0 || body.startKp > previous.endKp
                         || !["up", "down"].includes(body.direction) || typeof body.speedKmh !== "number" || !Number.isFinite(body.speedKmh)
-                        || body.speedKmh < 1 || body.speedKmh > 200) throw fail(400, "出発KP・方向・速度を確認してください。");
+                        || body.speedKmh < 1 || body.speedKmh > 1000) throw fail(400, "出発KP・方向・速度を確認してください。");
                     await store.set({ ...previous, enabled: true, startKp: body.startKp, direction: body.direction, speedKmh: body.speedKmh, startedAt: now() });
                 }
             }

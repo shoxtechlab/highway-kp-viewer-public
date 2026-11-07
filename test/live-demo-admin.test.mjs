@@ -30,6 +30,9 @@ for (const kind of ["memory", "sqlite"]) test(`${kind}: admin defaults off, vali
         const input = { routeId: "e28", enabled: true, startKp: 44.4, direction: "up", speedKmh: 80 };
         assert.equal((await handle(request("PUT", { ...input, startKp: 90 }))).status, 400);
         assert.equal((await handle(request("PUT", { ...input, direction: "invalid" }))).status, 400);
+        assert.equal((await handle(request("PUT", { ...input, speedKmh: 1001 }))).status, 400);
+        assert.equal((await handle(request("PUT", { ...input, speedKmh: 1000 }))).status, 200);
+        assert.equal((await readDemoSettings(store, "e28")).speedKmh, 1000);
         assert.equal((await handle(request("PUT", input))).status, 200);
         assert.equal((await readDemoSettings(store, "e28")).startedAt, time);
         assert.equal(liveDemoPosition(await readDemoSettings(store, "e28"), "e28", time + 360000).kp, 36.4);

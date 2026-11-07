@@ -25,7 +25,7 @@ function render(configs) {
     for (const c of configs) {
         const form = document.createElement("form"); form.className = "panel";
         // 表示名と路線IDはサーバー定義の3路線だけだが、文字列はtextContentで設定する。
-        form.innerHTML = '<h2><span class="name"></span><span class="state"></span></h2><div class="fields"><label>出発KP<input name="kp" type="number" min="0" step="any" required></label><label>方向<select name="direction"><option value="down">下り</option><option value="up">上り</option></select></label><label>速度 km/h<input name="speed" type="number" min="1" max="200" step="any" required></label></div><div class="actions"><button type="submit">開始・再スタート</button><button type="button" class="stop secondary">停止</button><a target="_blank" rel="noopener">路線図</a></div>';
+form.innerHTML = '<h2><span class="name"></span><span class="state"></span></h2><div class="fields"><label>出発KP<input name="kp" type="number" min="0" step="any" required></label><label>方向<select name="direction"><option value="down">下り</option><option value="up">上り</option></select></label><label>速度 km/h<input name="speed" type="number" min="1" max="1000" step="any" required></label></div><div class="actions"><button type="submit">開始・再スタート</button><button type="button" class="stop secondary">停止</button><a target="_blank" rel="noopener">路線図</a></div>';
         form.querySelector(".name").textContent = `${c.routeId.toUpperCase()} ${c.name}`;
         const state = form.querySelector(".state"); state.textContent = c.enabled ? "走行中" : "停止中"; state.classList.toggle("running", c.enabled);
         if (c.enabled && c.expiresAt) {
