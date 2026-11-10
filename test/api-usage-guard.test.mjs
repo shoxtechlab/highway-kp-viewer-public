@@ -3,13 +3,14 @@ import assert from "node:assert/strict";
 
 import {
   apiIsEnabled,
+  consumeDailyApiRequest,
   dailyApiLimit,
   isProtectedBatchApiPath,
   isRouteApiPath,
   utcUsageWindow
 } from "../server/api-usage-guard.js";
 
-test("route-data and live-location APIs share the daily safety guard", () => {
+test("route-data and live-location APIs are guarded", () => {
   assert.equal(isRouteApiPath("/api/route/e28"), true);
   assert.equal(isRouteApiPath("/api/position"), true);
   assert.equal(isRouteApiPath("/api/nearest"), true);
@@ -19,6 +20,29 @@ test("route-data and live-location APIs share the daily safety guard", () => {
   assert.equal(isRouteApiPath("/api/annotations"), false);
   assert.equal(isProtectedBatchApiPath("/api/batch/position"), true);
   assert.equal(isProtectedBatchApiPath("/api/position"), false);
+});
+
+test("live and route quota use independent tables and preserve atomic limits", async () => {
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(":memory:");
+  db.exec("CREATE TABLE api_daily_usage (usage_date TEXT PRIMARY KEY, request_count INTEGER, updated_at TEXT)");
+  const store = { prepare(sql) { return { async run() { db.exec(sql); }, bind(...args) { return { async first() { return db.prepare(sql).get(...args); } }; } }; } };
+  try {
+    assert.equal((await consumeDailyApiRequest(store, { limit: 1, bucket: "live" })).allowed, true);
+    assert.equal((await consumeDailyApiRequest(store, { limit: 1, bucket: "live" })).allowed, false);
+    assert.equal((await consumeDailyApiRequest(store, { limit: 1 })).allowed, true);
+    assert.equal((await consumeDailyApiRequest(store, { limit: 1 })).allowed, false);
+    const { onRequest } = await import("../functions/_middleware.js");
+    const next = async () => Response.json({ ok: true });
+    const env = { ANNOTATIONS_DB: store, API_DAILY_LIMIT: "1", LIVE_LOCATIONS_DAILY_REQUESTS: "2" };
+    const context = (path, method = "GET") => ({ request: new Request(`https://example.test${path}`, { method }), env, next });
+    assert.equal((await onRequest(context("/api/position"))).status, 429);
+    const live = await onRequest(context("/api/live-locations?route=e28"));
+    assert.equal(live.status, 200);
+    assert.equal(live.headers.get("X-RateLimit-Limit"), "2");
+    assert.equal((await onRequest(context("/api/live-locations?route=e28"))).status, 429);
+    assert.equal((await onRequest(context("/api/live-locations", "DELETE"))).status, 200);
+  } finally { db.close(); }
 });
 
 test("emergency switch defaults on and recognizes false values", () => {

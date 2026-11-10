@@ -26,18 +26,31 @@ export function utcUsageWindow(now = new Date()) {
   return { day, resetAt: reset.toISOString() };
 }
 
-export async function consumeDailyApiRequest(db, { limit, now = new Date() }) {
+export async function consumeDailyApiRequest(db, { limit, now = new Date(), bucket = "route" }) {
   if (!db) throw new Error("API usage database is not configured.");
   const { day, resetAt } = utcUsageWindow(now);
-  const row = await db.prepare(`
-    INSERT INTO api_daily_usage (usage_date, request_count, updated_at)
+  // テーブル名は固定の選択肢だけを使用。位置共有がKP検索の枠を消費しない。
+  const table = bucket === "live" ? "live_api_daily_usage" : "api_daily_usage";
+  const statement = () => db.prepare(`
+    INSERT INTO ${table} (usage_date, request_count, updated_at)
     VALUES (?, 1, ?)
     ON CONFLICT(usage_date) DO UPDATE SET
-      request_count = api_daily_usage.request_count + 1,
+      request_count = ${table}.request_count + 1,
       updated_at = excluded.updated_at
-    WHERE api_daily_usage.request_count < ?
+    WHERE ${table}.request_count < ?
     RETURNING request_count
   `).bind(day, now.toISOString(), limit).first();
+  let row;
+  try { row = await statement(); }
+  catch (error) {
+    // 段階デプロイでmigration未適用の場合のみ、追加テーブルを安全に初期化する。
+    // 認証・容量・障害など他のエラーではフェイルクローズを維持する。
+    if (bucket !== "live" || !/no such table:\s*(?:main\.)?live_api_daily_usage\b/i.test(String(error?.message))) throw error;
+    await db.prepare(`CREATE TABLE IF NOT EXISTS live_api_daily_usage (
+      usage_date TEXT PRIMARY KEY, request_count INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
+    )`).run();
+    row = await statement();
+  }
 
   return {
     allowed: Boolean(row),

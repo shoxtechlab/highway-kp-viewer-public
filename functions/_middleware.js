@@ -30,10 +30,11 @@ export async function onRequest(context) {
     }
   }
 
-  const limit = dailyApiLimit(context.env.API_DAILY_LIMIT);
+  const live = pathname === "/api/live-locations";
+  const limit = dailyApiLimit(live ? context.env.LIVE_LOCATIONS_DAILY_REQUESTS : context.env.API_DAILY_LIMIT);
   let usage;
   try {
-    usage = await consumeDailyApiRequest(context.env.ANNOTATIONS_DB, { limit });
+    usage = await consumeDailyApiRequest(context.env.ANNOTATIONS_DB, { limit, bucket: live ? "live" : "route" });
   } catch (error) {
     // Fail closed: if the safety counter is unavailable, do not access R2.
     console.error("API usage guard failed", error);

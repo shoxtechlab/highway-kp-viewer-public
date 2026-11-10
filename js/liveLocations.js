@@ -14,11 +14,16 @@ async function call(method, body, token, keepalive = false) {
         headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         ...(body ? { body: JSON.stringify(body) } : {}), signal: keepalive ? undefined : AbortSignal.timeout(10_000) });
     const result = await response.json();
-    if (!response.ok) throw Object.assign(new Error(result.error || "位置公開に失敗しました。"), { status: response.status });
+    if (!response.ok) {
+        const reset = Date.parse(result.resetAt || response.headers.get("X-RateLimit-Reset") || "");
+        const retry = Number(response.headers.get("Retry-After"));
+        throw Object.assign(new Error(result.error || "位置公開に失敗しました。"), { status: response.status,
+            retryAt: Number.isFinite(reset) && reset > Date.now() ? reset : Date.now() + (retry > 0 ? retry * 1000 : 60_000) });
+    }
     return result;
 }
 export function createLivePublisher({ getPosition, onStatus }) {
-    let enabled = false, token = null, label = "", timer = null, pending = false, generation = 0, lastAttempt = 0;
+    let enabled = false, token = null, label = "", timer = null, pending = false, generation = 0, lastAttempt = 0, blockedUntil = 0;
     const report = (state, message) => onStatus?.({ enabled, state, message, label });
     const remove = value => value ? call("DELETE", null, value, true).catch(() => {}) : Promise.resolve();
     const withdraw = () => { const old = token; token = null; label = ""; return remove(old); };
@@ -26,7 +31,7 @@ export function createLivePublisher({ getPosition, onStatus }) {
         if (!enabled) return;
         const position = document.hidden ? null : getPosition();
         if (!position) { void withdraw(); report("waiting", "公開待機（本線上の新しい位置が確認できると再開）"); return; }
-        if (pending || Date.now() - lastAttempt < LIVE_SEND_MS) return;
+        if (pending || Date.now() < blockedUntil || Date.now() - lastAttempt < LIVE_SEND_MS) return;
         const request = generation, previousToken = token;
         pending = true; lastAttempt = Date.now();
         try {
@@ -38,6 +43,7 @@ export function createLivePublisher({ getPosition, onStatus }) {
             report("public", `${label}として位置を公開中`);
         } catch (error) {
             if (request !== generation) return;
+            if (error.status === 429) blockedUntil = error.retryAt;
             void withdraw();
             report("error", `${error.message} 更新されない位置は30秒で非表示になります。`);
         } finally { pending = false; }
@@ -64,30 +70,55 @@ export function createLivePublisher({ getPosition, onStatus }) {
 }
 
 export function createLiveLocationReader({ routeId, onChange, onAvailability }) {
-    let visible = false, positions = [], offset = 0, generation = 0, polling = false;
+    let visible = false, positions = [], offset = 0, generation = 0;
+    let timer = null, controller = null, emptyCount = 0, failures = 0, blockedUntil = 0;
     const notify = () => { positions = positions.filter(p => p.expiresAt > Date.now() + offset); onChange(visible ? [...positions] : []); };
+    const focused = () => document.hasFocus();
+    const schedule = () => {
+        clearTimeout(timer);
+        if (!visible || document.hidden) return;
+        const delay = Math.max(blockedUntil - Date.now(), !focused() ? 30_000
+            : failures ? Math.min(60_000, 10_000 * 2 ** Math.min(failures, 3))
+            : emptyCount >= 3 ? 60_000 : emptyCount ? 30_000 : LIVE_SEND_MS);
+        timer = setTimeout(() => void poll(), delay);
+    };
     async function poll() {
-        if (!visible || document.hidden || polling) return;
-        polling = true; const request = generation;
+        clearTimeout(timer);
+        if (!visible || document.hidden || controller) return;
+        if (Date.now() < blockedUntil) { schedule(); return; }
+        const request = generation, own = new AbortController(); controller = own;
         try {
-            const response = await fetch(`${ENDPOINT}?route=${encodeURIComponent(routeId)}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+            const response = await fetch(`${ENDPOINT}?route=${encodeURIComponent(routeId)}`, { cache: "no-store", signal: AbortSignal.any([own.signal, AbortSignal.timeout(10_000)]) });
             const body = await response.json();
             if (request !== generation) return;
+            if (response.status === 429) {
+                // 日次枠はリセット時まで待つ。短時間制限ならRetry-Afterを優先する。
+                const reset = Date.parse(body.resetAt || response.headers.get("X-RateLimit-Reset") || "");
+                const retry = Number(response.headers.get("Retry-After"));
+                blockedUntil = Number.isFinite(reset) && reset > Date.now() ? reset
+                    : Date.now() + (Number.isFinite(retry) && retry > 0 ? retry * 1000 : 60_000);
+            }
             if (!response.ok) throw new Error(body.error || "取得できませんでした。");
+            failures = 0;
             onAvailability?.(body.enabled === true);
             positions = body.enabled ? body.positions || [] : [];
+            emptyCount = positions.length ? 0 : emptyCount + 1;
             offset = (Number(body.serverNow) || Date.now()) - Date.now(); notify();
             if (!body.enabled) { visible = false; }
-        } catch { if (request === generation) { positions = []; notify(); } }
-        finally { polling = false; }
+        } catch { if (request === generation) { failures++; positions = []; notify(); } }
+        finally { if (controller === own) controller = null; if (request === generation) schedule(); }
     }
-    const pollTimer = setInterval(poll, LIVE_SEND_MS);
     const expiryTimer = setInterval(() => { if (positions.length) notify(); }, 1000);
-    const visibility = () => { if (!document.hidden) void poll(); };
+    const cancel = () => { generation++; clearTimeout(timer); controller?.abort(); controller = null; };
+    const visibility = () => { cancel(); if (!document.hidden) void poll(); };
+    const focus = () => { if (visible && !document.hidden) void poll(); };
+    const blur = () => schedule();
     document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("focus", focus);
+    window.addEventListener("blur", blur);
     return {
-        setVisible(value) { visible = value; generation++; if (!value) positions = []; notify(); if (value) void poll(); },
-        stop() { visible = false; generation++; positions = []; clearInterval(pollTimer); clearInterval(expiryTimer); document.removeEventListener("visibilitychange", visibility); notify(); }
+        setVisible(value) { cancel(); visible = value; emptyCount = 0; failures = 0; if (!value) positions = []; notify(); if (value) void poll(); },
+        stop() { visible = false; cancel(); positions = []; clearInterval(expiryTimer); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("focus", focus); window.removeEventListener("blur", blur); notify(); }
     };
 }
 
